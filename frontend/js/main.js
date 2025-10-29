@@ -495,33 +495,18 @@ document.addEventListener('DOMContentLoaded', () => {
             restoreLastActiveSection();
           }, 100);
         } else {
-          // User not authenticated, hide greeting and reset navigation
+          // User not authenticated, redirect to login
           console.log('User not authenticated, status:', response.status);
-          const greeting = document.getElementById('userGreeting');
-          if (greeting) {
-            greeting.style.display = 'none';
-          }
-          // Reset navigation to show all sections (for login page)
-          updateNavigationForRole(null);
-          
-          // Still restore section for non-authenticated users (defaults to home)
-          setTimeout(() => {
-            restoreLastActiveSection();
-          }, 100);
+          alert('Please log in to access the admin dashboard.');
+          window.location.href = 'login.html';
+          return;
         }
       } catch (error) {
         console.log('Auth check failed:', error);
-        const greeting = document.getElementById('userGreeting');
-        if (greeting) {
-          greeting.style.display = 'none';
-        }
-        // Reset navigation on error
-        updateNavigationForRole(null);
-        
-        // Still restore section even on error (defaults to home)
-        setTimeout(() => {
-          restoreLastActiveSection();
-        }, 100);
+        // SECURITY: Redirect to login on any error
+        alert('Unable to verify authentication. Please log in again.');
+        window.location.href = 'login.html';
+        return;
       }
     }
     
