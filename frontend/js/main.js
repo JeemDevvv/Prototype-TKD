@@ -7,10 +7,10 @@ function getApiBase() {
     const origin = window.location.origin;
     const url = new URL(origin);
     // Always use the backend server directly to avoid CORS issues
-    return 'http://127.0.0.1:4000/api';
+    return 'https://prototype-tkd.onrender.com/api';
   } catch (e) {
     // file:// or unknown origin
-    return 'http://127.0.0.1:4000/api';
+    return 'https://prototype-tkd.onrender.com/api';
   }
 }
 const API_BASE = getApiBase();
