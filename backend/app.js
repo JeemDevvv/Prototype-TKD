@@ -68,7 +68,7 @@ app.use(session({
   }),
   cookie: {
     sameSite: 'lax', // allow cross-origin for localhost
-    secure: false,    // only false for HTTP (localhost)
+    secure: process.env.NODE_ENV === 'production', // true for HTTPS in production
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));

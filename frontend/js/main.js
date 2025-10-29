@@ -443,13 +443,18 @@ document.addEventListener('DOMContentLoaded', () => {
           if (greeting) {
             greeting.style.display = 'none';
           }
-          // Optionally redirect to login page
-          // window.location.href = 'index.html';
+          // Redirect to login page
+          window.location.href = 'login.html';
         } else {
           console.log('Failed to fetch user data, status:', response.status);
           const userNameEl = document.getElementById('userName');
           if (userNameEl) {
             userNameEl.textContent = 'User';
+          }
+          // Show greeting even if user data fails to load
+          const greeting = document.getElementById('userGreeting');
+          if (greeting) {
+            greeting.style.display = 'block';
           }
         }
       } catch (error) {
@@ -457,6 +462,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const userNameEl = document.getElementById('userName');
         if (userNameEl) {
           userNameEl.textContent = 'User';
+        }
+        // Show greeting even on error
+        const greeting = document.getElementById('userGreeting');
+        if (greeting) {
+          greeting.style.display = 'block';
         }
       }
     }
