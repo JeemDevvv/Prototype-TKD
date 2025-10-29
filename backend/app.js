@@ -6,8 +6,6 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const path = require('path');
-const { generalLimiter } = require('./middleware/rateLimiter');
-const { securityLogger } = require('./middleware/securityLogger');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
@@ -48,10 +46,6 @@ app.use(cors({
   },
   credentials: true
 }));
-
-// Security middleware
-app.use(securityLogger);
-app.use(generalLimiter);
 
 // Middleware
 app.use(bodyParser.json({ limit: '10mb' }));
@@ -98,10 +92,7 @@ mongoose.connect(process.env.MONGODB_URI, {
       const hashedPassword = await bcrypt.hash(defaultPassword, 10);
       const defaultAdmin = new Admin({
         username: defaultUsername,
-        password: hashedPassword,
-        name: 'Aldrin Admin',
-        email: 'aldrin@arise-tkd.com',
-        status: 'active'
+        password: hashedPassword
       });
       await defaultAdmin.save();
       console.log(`Default admin created: username="${defaultUsername}", password="${defaultPassword}"`);

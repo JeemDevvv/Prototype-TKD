@@ -4353,25 +4353,14 @@ form button:hover, form button:focus {
   font-size: 1.1rem;
   padding: 0.7rem 2.2rem;
   border-radius: 2rem;
-  min-width: 200px;
+  max-width: 30%;
   text-align: center;
-  display: inline-block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 @media (max-width: 900px) {
   .pta-about-content, .pta-about-skills-stats {
     flex-direction: column;
     gap: 2.5rem;
     padding: 2.5rem 1.5rem 2rem 1.5rem;
-  }
-  .pta-about-cta-content .btn {
-    min-width: 190px;
-    font-size: 1.05rem;
-    padding: 0.65rem 2rem;
-  }
-  .pta-about-skills-stats {
     margin: 2rem 1rem 2rem 1rem;
   }
   .pta-about-img img {
@@ -4414,11 +4403,6 @@ form button:hover, form button:focus {
   }
   .pta-about-cta-content h2 {
     font-size: 1.2rem;
-  }
-  .pta-about-cta-content .btn {
-    min-width: 180px;
-    font-size: 1rem;
-    padding: 0.6rem 1.8rem;
   }
   
   /* Extra spacing for very small screens */

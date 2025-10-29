@@ -4,9 +4,6 @@ const Admin = require('../models/Admin');
 const Coach = require('../models/Coach');
 const AssistantCoach = require('../models/AssistantCoach');
 const bcrypt = require('bcrypt');
-const { authLimiter } = require('../middleware/rateLimiter');
-const { sanitizeInput, validateEmail, validatePassword, validateRequired } = require('../middleware/validation');
-const { logAuthEvent, logSuspiciousActivity } = require('../middleware/securityLogger');
 
 // Support GET requests for login1 endpoint
 router.get('/login1', (req, res) => {
@@ -14,67 +11,39 @@ router.get('/login1', (req, res) => {
 });
 
 // Handle typo in login endpoint
-router.post('/login1', 
-  authLimiter,
-  sanitizeInput,
-  validateRequired(['username', 'password']),
-  async (req, res) => {
-    const { username, password, role } = req.body;
-    let user = null;
-    let resolvedRole = null;
+router.post('/login1', async (req, res) => {
+  // Simply use the same login logic
+  const { username, password, role } = req.body;
+  let user = null;
+  let resolvedRole = null;
 
-    try {
-      // Log login attempt
-      logAuthEvent('LOGIN_ATTEMPT', req, { username, role });
-
-      if (role === 'admin') {
-        user = await Admin.findOne({ username });
-        resolvedRole = 'admin';
-      } else if (role === 'coach') {
-        user = await Coach.findOne({ username });
-        resolvedRole = 'coach';
-      } else if (role === 'assistant') {
-        user = await AssistantCoach.findOne({ username });
-        resolvedRole = 'assistant';
-      } else {
-        user = await Admin.findOne({ username }) || await Coach.findOne({ username }) || await AssistantCoach.findOne({ username });
-        if (!user) {
-          logSuspiciousActivity('FAILED_LOGIN_UNKNOWN_ROLE', req, { username, role });
-          return res.status(401).json({ message: 'Invalid Credentials' });
-        }
-        
-        resolvedRole = user instanceof Admin ? 'admin' : (user instanceof Coach ? 'coach' : 'assistant');
-      }
-
-      if (!user) {
-        logSuspiciousActivity('FAILED_LOGIN_USER_NOT_FOUND', req, { username, role });
-        return res.status(401).json({ message: 'Invalid Credentials' });
-      }
-
-      const match = await bcrypt.compare(password, user.password);
-      if (!match) {
-        logSuspiciousActivity('FAILED_LOGIN_WRONG_PASSWORD', req, { username, role });
-        return res.status(401).json({ message: 'Invalid Credentials' });
-      }
-
-      // Set session with additional security data
-      req.session.userId = user._id;
-      req.session.role = resolvedRole;
-      req.session.createdAt = Date.now();
-      req.session.userStatus = user.status || 'active';
-      req.session.username = user.username;
-      req.session.name = user.name || user.username;
-
-      // Log successful login
-      logAuthEvent('LOGIN_SUCCESS', req, { username, role, userId: user._id });
-
-      res.json({ message: 'Login successful', role: resolvedRole });
-    } catch (e) {
-      logSuspiciousActivity('LOGIN_ERROR', req, { error: e.message, username, role });
-      res.status(500).json({ message: 'Server error' });
+  try {
+    if (role === 'admin') {
+      user = await Admin.findOne({ username });
+      resolvedRole = 'admin';
+    } else if (role === 'coach') {
+      user = await Coach.findOne({ username });
+      resolvedRole = 'coach';
+    } else if (role === 'assistant') {
+      user = await AssistantCoach.findOne({ username });
+      resolvedRole = 'assistant';
+    } else {
+      user = await Admin.findOne({ username }) || await Coach.findOne({ username }) || await AssistantCoach.findOne({ username });
+      if (!user) return res.status(401).json({ message: 'Invalid Credentials' });
+      
+      resolvedRole = user instanceof Admin ? 'admin' : (user instanceof Coach ? 'coach' : 'assistant');
     }
+
+    if (!user) return res.status(401).json({ message: 'Invalid Credentials' });
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(401).json({ message: 'Invalid Credentials' });
+    req.session.userId = user._id;
+    req.session.role = resolvedRole;
+    res.json({ message: 'Login successful', role: resolvedRole });
+  } catch (e) {
+    res.status(500).json({ message: 'Server error' });
   }
-);
+});
 
 // Support GET requests for login endpoint (for browser preflight/direct access)
 router.get('/login', (req, res) => {
@@ -132,16 +101,15 @@ router.get('/me', async (req, res) => {
     const { userId, role } = req.session;
 
     if (role === 'admin') {
-      user = await Admin.findById(userId).select('username name email status');
+      user = await Admin.findById(userId).select('username');
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
       return res.json({
         username: user.username,
-        name: user.name || user.username,
+        name: user.username, // Admin doesn't have name field, use username
         role: role,
-        email: user.email || null,
-        status: user.status || 'active'
+        email: null
       });
     } else if (role === 'coach') {
       user = await Coach.findById(userId).select('username name email');
