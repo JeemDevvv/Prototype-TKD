@@ -113,8 +113,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       let res, result;
       try {
-        // Use the direct backend URL to avoid any routing issues
-        const loginUrl = 'http://127.0.0.1:4000/api/auth/login';
+        // Use the deployed backend URL
+        const loginUrl = `${API_BASE}/auth/login`;
         res = await fetch(loginUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
