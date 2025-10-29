@@ -1,4 +1,4 @@
-// main.js - Handles frontend logic for login, stats search, dashboard, etc.
+
 
 function getApiBase() {
   const saved = localStorage.getItem('API_BASE');
@@ -6,19 +6,19 @@ function getApiBase() {
   try {
     const origin = window.location.origin;
     const url = new URL(origin);
-    // Always use the backend server directly to avoid CORS issues
+
     return 'https://prototype-tkd.onrender.com/api';
   } catch (e) {
-    // file:// or unknown origin
+   
     return 'https://prototype-tkd.onrender.com/api';
   }
 }
 const API_BASE = getApiBase();
 
-// Fix for login1 issue - intercept fetch requests
+
 const originalFetch = window.fetch;
 window.fetch = function(url, options) {
-  // Fix the login1 endpoint issue
+  
   if (typeof url === 'string' && url.includes('/auth/login1')) {
     url = url.replace('/auth/login1', '/auth/login');
   }

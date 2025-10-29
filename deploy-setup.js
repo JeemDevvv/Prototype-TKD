@@ -79,3 +79,4 @@ console.log('\n🔧 Quick Commands:');
 console.log('   npm install          # Install dependencies');
 console.log('   npm start            # Start the server locally');
 console.log('   npm run dev          # Start with nodemon (development)');
+

@@ -6,6 +6,8 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const path = require('path');
+const { generalLimiter } = require('./middleware/rateLimiter');
+const { securityLogger } = require('./middleware/securityLogger');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
@@ -46,6 +48,10 @@ app.use(cors({
   },
   credentials: true
 }));
+
+// Security middleware
+app.use(securityLogger);
+app.use(generalLimiter);
 
 // Middleware
 app.use(bodyParser.json({ limit: '10mb' }));
