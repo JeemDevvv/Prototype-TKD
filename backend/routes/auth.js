@@ -106,8 +106,19 @@ router.post('/login', async (req, res) => {
     if (!user) return res.status(401).json({ message: 'Invalid Credentials' });
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ message: 'Invalid Credentials' });
+    
+    // Set session with additional security data
     req.session.userId = user._id;
     req.session.role = resolvedRole;
+    req.session.createdAt = Date.now();
+    req.session.userStatus = 'active';
+    
+    console.log('Session set:', {
+      userId: req.session.userId,
+      role: req.session.role,
+      sessionId: req.sessionID
+    });
+    
     res.json({ message: 'Login successful', role: resolvedRole });
   } catch (e) {
     res.status(500).json({ message: 'Server error' });
@@ -117,12 +128,15 @@ router.post('/login', async (req, res) => {
 // Get current user session
 router.get('/me', async (req, res) => {
   try {
+    console.log('=== /me endpoint called ===');
+    console.log('Session ID:', req.sessionID);
     console.log('Session data:', req.session);
     console.log('User ID:', req.session.userId);
     console.log('Role:', req.session.role);
+    console.log('Session exists:', !!req.session);
     
-    if (!req.session.userId || !req.session.role) {
-      console.log('No session found, returning 401');
+    if (!req.session || !req.session.userId || !req.session.role) {
+      console.log('No valid session found, returning 401');
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
