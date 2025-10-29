@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player Profile - Arise Taekwonders</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+  <!-- Navbar -->
+  <header class="pta-navbar">
+    <div class="pta-navbar-content">
+      <div class="pta-navbar-left">
+        <img src="../public/arise.png" alt="PTA Logo" class="pta-logo">
+      </div>
+      <button class="pta-navbar-toggle" id="ptaNavbarToggle" aria-label="Toggle navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <div class="pta-navbar-right" id="ptaNavMenu">
+        <a href="index.html" class="pta-nav-link">Home</a>
+        <a href="#about" class="pta-nav-link">Achievements</a>
+        <a href="#competitions" class="pta-nav-link">About Us</a>
+        <div class="pta-navbar-buttons">
+          <a href="check-stats.html" class="btn btn-nav">Check Stats</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Client-side Sidebar -->
+  <aside class="client-sidebar" id="clientSidebar">
+    <div class="sidebar-header">
+      <img src="../public/arise.png" alt="PTA Logo" class="sidebar-logo">
+      <button class="sidebar-close" id="sidebarClose">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="index.html" class="sidebar-link">
+        <i class="fas fa-home"></i>
+        Home
+      </a>
+      <a href="achievements.html" class="sidebar-link">
+        <i class="fas fa-trophy"></i>
+        Achievements
+      </a>
+      <a href="about.html" class="sidebar-link">
+        <i class="fas fa-info-circle"></i>
+        About Us
+      </a>
+      <div class="sidebar-buttons">
+        <a href="check-stats.html" class="btn btn-sidebar">
+          <i class="fas fa-chart-line"></i>
+          Check Stats
+        </a>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Loading Screen -->
+  <div id="loadingScreen" class="loading-screen">
+    <div class="loading-spinner">
+      <div class="spinner"></div>
+      <p>Loading player profile...</p>
+    </div>
+  </div>
+
+  <!-- Main Profile Container -->
+  <main class="profile-page">
+    <!-- Hero Section -->
+    <section class="profile-hero">
+      <div class="hero-background"></div>
+      <div class="hero-content">
+        <div class="profile-avatar-container">
+          <div class="profile-avatar" id="profileAvatar">
+            <i class="fas fa-user"></i>
+          </div>
+          <div class="avatar-badge" id="beltBadge"></div>
+        </div>
+        <div class="hero-info">
+          <h1 id="profileName" class="profile-name">Loading...</h1>
+          <p id="profileTitle" class="profile-title">Taekwondo Athlete</p>
+          <div class="profile-meta">
+            <span class="meta-item">
+              <i class="fas fa-id-card"></i>
+              <span id="profileNccRef">-</span>
+            </span>
+            <span class="meta-item">
+              <i class="fas fa-birthday-cake"></i>
+              <span id="profileAge">-</span>
+            </span>
+            <span class="meta-item">
+              <i class="fas fa-venus-mars"></i>
+              <span id="profileGender">-</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Profile Content -->
+    <section class="profile-content">
+      <div class="profile-grid">
+        <!-- Personal Information Card -->
+        <div class="profile-card personal-info-card">
+          <div class="card-header">
+            <h3><i class="fas fa-user-circle"></i> Personal Information</h3>
+          </div>
+          <div class="card-content">
+            <div class="info-grid">
+              <div class="info-item">
+                <label>Full Name</label>
+                <span id="profileFullName">-</span>
+              </div>
+              <div class="info-item">
+                <label>Birth Date</label>
+                <span id="profileBirthdate">-</span>
+              </div>
+              <div class="info-item">
+                <label>Address</label>
+                <span id="profileAddress">-</span>
+              </div>
+              <div class="info-item">
+                <label>Contact Number</label>
+                <span id="profileContact">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Belt & Training Card -->
+        <div class="profile-card belt-card">
+          <div class="card-header">
+            <h3><i class="fas fa-medal"></i> Belt & Training</h3>
+          </div>
+          <div class="card-content">
+            <div class="belt-display">
+              <div class="current-belt">
+                <div class="belt-rank" id="currentBeltRank">-</div>
+                <span class="belt-label">Current Belt</span>
+              </div>
+              <div class="belt-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" id="beltProgress"></div>
+                </div>
+                <span class="progress-text">Progress to Next Belt</span>
+              </div>
+              <div class="next-belt">
+                <div class="belt-rank next" id="nextBeltRank">-</div>
+                <span class="belt-label">Next Belt</span>
+              </div>
+            </div>
+            <div class="training-info">
+              <div class="info-item">
+                <label>Last Promotion Exam</label>
+                <span id="lastPromotionExam">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Competition Stats Card -->
+        <div class="profile-card stats-card">
+          <div class="card-header">
+            <h3><i class="fas fa-trophy"></i> Competition Statistics</h3>
+          </div>
+          <div class="card-content">
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-icon">
+                  <i class="fas fa-medal"></i>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-number" id="statMedals">-</div>
+                  <div class="stat-label">Medals</div>
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon">
+                  <i class="fas fa-flag"></i>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-number" id="statCompetitions">-</div>
+                  <div class="stat-label">Competitions</div>
+                </div>
+              </div>
+            </div>
+            <div class="competitions-list">
+              <label>Recent Competitions</label>
+              <div id="competitionsList" class="competitions-tags">
+                <!-- Competition tags will be loaded here -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Achievements Card -->
+        <div class="profile-card achievements-card">
+          <div class="card-header">
+            <h3><i class="fas fa-award"></i> Achievements</h3>
+          </div>
+          <div class="card-content">
+            <div id="achievementsList" class="achievements-list">
+              <!-- Achievements will be loaded here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Self-Defense Card -->
+        <div class="profile-card self-defense-card">
+          <div class="card-header">
+            <h3><i class="fas fa-shield-alt"></i> Self-Defense Requirements</h3>
+          </div>
+          <div class="card-content">
+            <div class="self-defense-content">
+              <p class="self-defense-description">Specific forms needed to perform at self-defense for next promotion:</p>
+              <div id="selfDefenseForms" class="self-defense-forms">
+                <!-- Self-defense forms will be loaded here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Action Buttons -->
+    <section class="profile-actions">
+      <div class="action-buttons">
+        <button class="action-btn outline" id="checkAnotherPlayerBtn">
+          <i class="fas fa-search"></i>
+          Check Another Player
+        </button>
+      </div>
+    </section>
+
+    <!-- Check Another Player Sliding Container -->
+    <div id="checkPlayerContainer" class="check-player-container">
+      <div class="check-player-content">
+        <button class="check-player-close" id="checkPlayerClose">
+          <i class="fas fa-times"></i>
+        </button>
+        <h2>Check Another Player</h2>
+        <form id="checkPlayerForm">
+          <input type="text" name="nccRef" placeholder="Enter NCC Reference Number" required>
+          <button type="submit" class="btn">Search</button>
+        </form>
+        <div id="checkPlayerResult"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Error Message -->
+  <div id="errorMessage" class="error-message hidden">
+    <div class="error-content">
+      <i class="fas fa-exclamation-triangle"></i>
+      <h3>Profile Not Found</h3>
+      <p>We couldn't find a player profile with that NCC Reference number.</p>
+      <a href="check-stats.html" class="btn btn-primary">Try Again</a>
+    </div>
+  </div>
+
+  <footer class="pta-footer">
+    <div class="pta-footer-content">
+      <div class="pta-footer-col pta-footer-logo-col">
+        <img src="../public/arise.png" alt="PTA Logo" class="pta-footer-logo">
+        <div class="pta-footer-address">
+          Eulogio 'Amang' Rodriguez Institute of Science and Technology<br>
+          Nagtahan, Manila, Philippines
+        </div>
+        <div class="pta-footer-contact">
+          <div><i class="fa-solid fa-phone"></i> 0977 384 5870</div>
+          <div><i class="fa-regular fa-envelope"></i>
+            arise.tkd@gmail.com</div>
+        </div>
+      </div>
+      <div class="pta-footer-col">
+        <div class="pta-footer-title">Quick Links</div>
+        <a href="#" class="pta-footer-link">Home</a>
+        <a href="#achievements" class="pta-footer-link">Achievements</a>
+        <a href="about.html" class="pta-footer-link">About Us</a>
+      </div>
+      <div class="pta-footer-col">
+        <div class="pta-footer-title">Follow us</div>
+        <div class="pta-footer-socials">
+          <a href="#" class="pta-footer-social"><i class="fa-solid fa-globe"></i></a>
+          <a href="#" class="pta-footer-social"><i class="fa-brands fa-square-facebook"></i></a>
+          <a href="#" class="pta-footer-social"><i class="fa-brands fa-facebook-messenger"></i></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../js/main.js"></script>
+  <link rel="icon" href="../public/logo.jpg">
+</body>
+</html> 
