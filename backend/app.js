@@ -16,38 +16,73 @@ const app = express();
 
 app.use(cors({
   origin: (origin, callback) => {
+    console.log('CORS origin check:', origin);
+    
     // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    // Allow localhost for development
-    const allowedLocal = /^http:\/\/(127\.0\.0\.1|localhost):\d+$/;
-    if (allowedLocal.test(origin)) return callback(null, true);
-    
-    // Allow Render domains for production
-    const allowedRender = /^https:\/\/.*\.onrender\.com$/;
-    if (allowedRender.test(origin)) return callback(null, true);
-    
-    // Allow Railway domains for production
-    const allowedRailway = /^https:\/\/.*\.railway\.app$/;
-    if (allowedRailway.test(origin)) return callback(null, true);
-    
-    // Allow Vercel domains for production
-    const allowedVercel = /^https:\/\/.*\.vercel\.app$/;
-    if (allowedVercel.test(origin)) return callback(null, true);
-    
-    // Allow Netlify domains for production
-    const allowedNetlify = /^https:\/\/.*\.netlify\.app$/;
-    if (allowedNetlify.test(origin)) return callback(null, true);
-    
-    // For development, allow all origins
-    if (process.env.NODE_ENV !== 'production') {
+    if (!origin) {
+      console.log('No origin - allowing');
       return callback(null, true);
     }
     
+    // Allow localhost for development
+    const allowedLocal = /^http:\/\/(127\.0\.0\.1|localhost):\d+$/;
+    if (allowedLocal.test(origin)) {
+      console.log('Localhost origin - allowing');
+      return callback(null, true);
+    }
+    
+    // Allow ALL Render domains for production
+    const allowedRender = /^https:\/\/.*\.onrender\.com$/;
+    if (allowedRender.test(origin)) {
+      console.log('Render origin - allowing:', origin);
+      return callback(null, true);
+    }
+    
+    // Allow Railway domains for production
+    const allowedRailway = /^https:\/\/.*\.railway\.app$/;
+    if (allowedRailway.test(origin)) {
+      console.log('Railway origin - allowing:', origin);
+      return callback(null, true);
+    }
+    
+    // Allow Vercel domains for production
+    const allowedVercel = /^https:\/\/.*\.vercel\.app$/;
+    if (allowedVercel.test(origin)) {
+      console.log('Vercel origin - allowing:', origin);
+      return callback(null, true);
+    }
+    
+    // Allow Netlify domains for production
+    const allowedNetlify = /^https:\/\/.*\.netlify\.app$/;
+    if (allowedNetlify.test(origin)) {
+      console.log('Netlify origin - allowing:', origin);
+      return callback(null, true);
+    }
+    
+    // For development, allow all origins
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Development mode - allowing all origins');
+      return callback(null, true);
+    }
+    
+    console.log('Origin not allowed:', origin);
     return callback(new Error('Not allowed by CORS'));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
 }));
+
+// Handle preflight OPTIONS requests
+app.options('*', (req, res) => {
+  console.log('OPTIONS preflight request from:', req.headers.origin);
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
+});
 
 // Security middleware
 app.use(securityLogger);
@@ -69,8 +104,8 @@ app.use(session({
     autoRemove: 'native'
   }),
   cookie: {
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'none', // Allow cross-origin cookies
+    secure: true, // Required for sameSite: 'none'
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     httpOnly: true
   }
