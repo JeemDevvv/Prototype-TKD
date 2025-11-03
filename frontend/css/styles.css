@@ -153,6 +153,7 @@ body {
   justify-content: center;
   overflow: hidden;
   padding: 0;
+  --hero-bg: url('public/group.png'); /* Default first image */
 }
 .pta-hero::before {
   content: '';

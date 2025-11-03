@@ -75,32 +75,34 @@
     </div>
   </section>
   <script>
-    // Carousel images
+    // Carousel images - use absolute paths for production compatibility
     const heroImages = [
-      'public/group.png',
-      'public/group1.jpg',
-      'public/group2.jpg',
-      'public/group3.jpg',
-      'public/group4.jpg'
+      '/public/group.png',
+      '/public/group1.jpg',
+      '/public/group2.jpg',
+      '/public/group3.jpg',
+      '/public/group4.jpg'
     ];
     let heroIndex = 0;
     const heroSection = document.getElementById('ptaHero');
-    function setHeroBg(idx, fade = false) {
-      if (fade) {
-        heroSection.classList.add('pta-hero-fade');
-        setTimeout(() => {
+    if (heroSection) {
+      function setHeroBg(idx, fade = false) {
+        if (fade) {
+          heroSection.classList.add('pta-hero-fade');
+          setTimeout(() => {
+            heroSection.style.setProperty('--hero-bg', `url('${heroImages[idx]}')`);
+            heroSection.classList.remove('pta-hero-fade');
+          }, 400); // fade out, then change, then fade in
+        } else {
           heroSection.style.setProperty('--hero-bg', `url('${heroImages[idx]}')`);
-          heroSection.classList.remove('pta-hero-fade');
-        }, 400); // fade out, then change, then fade in
-      } else {
-        heroSection.style.setProperty('--hero-bg', `url('${heroImages[idx]}')`);
+        }
       }
+      setHeroBg(heroIndex);
+      setInterval(() => {
+        heroIndex = (heroIndex + 1) % heroImages.length;
+        setHeroBg(heroIndex, true);
+      }, 4000);
     }
-    setHeroBg(heroIndex);
-    setInterval(() => {
-      heroIndex = (heroIndex + 1) % heroImages.length;
-      setHeroBg(heroIndex, true);
-    }, 4000);
   </script>
 
   <!-- Trusted Logos Section -->

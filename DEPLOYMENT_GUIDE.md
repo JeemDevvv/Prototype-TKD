@@ -168,7 +168,7 @@ Fill in the following:
 - **Branch**: `main` (or your default branch)
 - **Root Directory**: `frontend`
 - **Build Command**: Leave empty (no build needed)
-- **Publish Directory**: `frontend`
+- **Publish Directory**: `pages` (HTML files are in `frontend/pages/` directory)
 
 ### 4.4 Deploy
 1. Click **"Create Static Site"**

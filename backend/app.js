@@ -120,6 +120,9 @@ app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 
 // Session middleware (after CORS)
+// Trust proxy for production (Render uses proxies)
+app.set('trust proxy', 1);
+
 app.use(session({
   secret: process.env.SESSION_SECRET || 'secret',
   resave: false,
@@ -131,12 +134,14 @@ app.use(session({
     autoRemove: 'native'
   }),
   cookie: {
-    // Use 'lax' and 'false' for localhost HTTP, 'none' and 'true' only for actual HTTPS production
-    sameSite: process.env.NODE_ENV === 'production' && process.env.USE_HTTPS === 'true' ? 'none' : 'lax',
-    secure: process.env.NODE_ENV === 'production' && process.env.USE_HTTPS === 'true', // true only for actual HTTPS production
+    // For production HTTPS (Render): use 'none' and 'true' for cross-domain cookies
+    // For local development HTTP: use 'lax' and 'false'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production', // true for HTTPS in production
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     httpOnly: true,
-    path: '/' // Ensure cookie is available for all paths
+    path: '/', // Ensure cookie is available for all paths
+    domain: undefined // Let browser set domain automatically
   }
 }));
 
