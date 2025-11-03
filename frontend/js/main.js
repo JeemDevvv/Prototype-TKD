@@ -17,7 +17,7 @@ function getApiBase() {
     
     // Otherwise use production backend
     console.log('Production detected, using deployed backend');
-    return 'https://prototype-tkd.onrender.com/api';
+    return 'https://prototype-tkd-backend.onrender.com/api';
   } catch (e) {
     // Default to localhost for local development
     console.log('Error detecting environment, defaulting to local backend');
@@ -37,7 +37,7 @@ function getSocketUrl() {
       return `http://${backendHost}:4000`;
     }
     
-    return 'https://prototype-tkd.onrender.com';
+    return 'https://prototype-tkd-backend.onrender.com';
   } catch (e) {
     return 'http://localhost:4000';
   }
