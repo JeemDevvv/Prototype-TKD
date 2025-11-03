@@ -1,19 +1,342 @@
-
-
 function getApiBase() {
   const saved = localStorage.getItem('API_BASE');
   if (saved && /^https?:\/\//.test(saved)) return saved.replace(/\/$/, '');
+  
   try {
-    const origin = window.location.origin;
-    const url = new URL(origin);
-
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    
+    // If running locally (any localhost/127.0.0.1 port, or file://), use local backend
+    // IMPORTANT: Use the same hostname as the frontend to avoid cookie issues
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || protocol === 'file:') {
+      // Use the same hostname as the frontend for cookie sharing
+      const backendHost = hostname === '127.0.0.1' ? '127.0.0.1' : 'localhost';
+      console.log(`Local development detected, using local backend at http://${backendHost}:4000`);
+      return `http://${backendHost}:4000/api`;
+    }
+    
+    // Otherwise use production backend
+    console.log('Production detected, using deployed backend');
     return 'https://prototype-tkd.onrender.com/api';
   } catch (e) {
-   
-    return 'https://prototype-tkd.onrender.com/api';
+    // Default to localhost for local development
+    console.log('Error detecting environment, defaulting to local backend');
+    return 'http://localhost:4000/api';
   }
 }
 const API_BASE = getApiBase();
+
+// Get Socket.io server URL
+function getSocketUrl() {
+  try {
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || protocol === 'file:') {
+      const backendHost = hostname === '127.0.0.1' ? '127.0.0.1' : 'localhost';
+      return `http://${backendHost}:4000`;
+    }
+    
+    return 'https://prototype-tkd.onrender.com';
+  } catch (e) {
+    return 'http://localhost:4000';
+  }
+}
+
+// Initialize Socket.io connection
+let socket = null;
+let socketConnected = false;
+
+// Global variables for user role and team (accessible to Socket.io handlers)
+let currentUserRole = null;
+let currentUserTeam = null;
+let currentTeamFilter = 'all';
+
+function initSocket() {
+  if (typeof io === 'undefined') {
+    console.warn('Socket.io library not loaded');
+    return;
+  }
+
+  const socketUrl = getSocketUrl();
+  socket = io(socketUrl, {
+    transports: ['websocket', 'polling'],
+    withCredentials: true
+  });
+
+  socket.on('connect', () => {
+    console.log('Socket.io connected:', socket.id);
+    socketConnected = true;
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Socket.io disconnected');
+    socketConnected = false;
+  });
+
+  socket.on('connect_error', (error) => {
+    console.error('Socket.io connection error:', error);
+  });
+
+  // Player events
+  socket.on('player:created', (player) => {
+    console.log('Real-time: Player created', player);
+    handlePlayerCreated(player);
+  });
+
+  socket.on('player:updated', (player) => {
+    console.log('Real-time: Player updated', player);
+    handlePlayerUpdated(player);
+  });
+
+  socket.on('player:deleted', (data) => {
+    console.log('Real-time: Player deleted', data);
+    handlePlayerDeleted(data.id);
+  });
+
+  // Account events
+  socket.on('account:created', (account) => {
+    console.log('Real-time: Account created', account);
+    handleAccountCreated(account);
+  });
+
+  socket.on('account:updated', (account) => {
+    console.log('Real-time: Account updated', account);
+    handleAccountUpdated(account);
+  });
+
+  socket.on('account:deleted', (data) => {
+    console.log('Real-time: Account deleted', data);
+    handleAccountDeleted(data.id, data.role);
+  });
+}
+
+// Real-time player handlers
+function handlePlayerCreated(player) {
+  console.log('[Real-time Create] Player created:', player);
+  const playerTeam = (player.team || '').trim();
+  const userTeam = (currentUserTeam || '').trim();
+  
+  // Check if user can see this player (role-based filtering)
+  if (currentUserRole === 'assistant' && currentUserTeam) {
+    if (playerTeam.toUpperCase() !== userTeam.toUpperCase()) {
+      // Assistant Coach can't see players from other teams
+      console.log('[Real-time Create] Player from different team, skipping');
+      return;
+    }
+  }
+
+  // Check current filter
+  const teamFilter = currentTeamFilter || 'all';
+  const shouldShow = teamFilter === 'all' || playerTeam.toUpperCase() === teamFilter.toUpperCase();
+  if (!shouldShow) {
+    console.log('[Real-time Create] Player doesn\'t match filter, skipping');
+    return;
+  }
+
+  const tbody = document.querySelector('#playerTable tbody');
+  if (!tbody) {
+    console.log('[Real-time Create] Table body not found');
+    return;
+  }
+
+  // Check if player already exists
+  const existingRow = tbody.querySelector(`tr[data-id="${player._id}"]`);
+  if (existingRow) {
+    console.log('[Real-time Create] Player already exists, skipping');
+    return;
+  }
+
+  // Check search filter
+  const searchTerm = document.getElementById('playerSearch')?.value.toLowerCase() || '';
+  const playerName = (player.name || '').toLowerCase();
+  if (searchTerm && !playerName.includes(searchTerm)) {
+    console.log('[Real-time Create] Player doesn\'t match search, skipping');
+    return;
+  }
+
+  // Create and add row
+  const tr = document.createElement('tr');
+  tr.setAttribute('data-id', player._id);
+  tr.setAttribute('data-team', playerTeam);
+  tr.setAttribute('data-gender', player.gender || '');
+  tr.innerHTML = `
+    <td>${player.nccRef || '-'}</td>
+    <td>${player.name || '-'}</td>
+    <td>${playerTeam || '-'}</td>
+    <td>${player.beltRank || '-'}</td>
+    <td>${player.birthdate ? player.birthdate.slice(0,10) : '-'}</td>
+    <td>
+      <button class="btn btn-edit" data-id="${player._id}" title="Edit Player">
+        <i class="fas fa-edit"></i>
+      </button>
+      <button class="btn btn-delete" data-id="${player._id}" title="Delete Player">
+        <i class="fas fa-trash"></i>
+      </button>
+    </td>
+  `;
+  tr.addEventListener('click', () => {
+    if (typeof showDetails === 'function') {
+      showDetails(player);
+    }
+  });
+  
+  tbody.appendChild(tr);
+  if (typeof attachEditDeleteListeners === 'function') {
+    attachEditDeleteListeners();
+  }
+  updateKpis();
+  console.log('[Real-time Create] Player row added successfully');
+}
+
+function handlePlayerUpdated(player) {
+  console.log('[Real-time Update] Player updated:', player);
+  console.log('[Real-time Update] Current user role:', currentUserRole);
+  console.log('[Real-time Update] Current user team:', currentUserTeam);
+  
+  const row = document.querySelector(`#playerTable tbody tr[data-id="${player._id}"]`);
+  const playerTeam = (player.team || '').trim();
+  const userTeam = (currentUserTeam || '').trim();
+  
+  // Check if user can see this player (for Assistant Coach)
+  if (currentUserRole === 'assistant' && currentUserTeam) {
+    // Normalize team names for comparison
+    if (playerTeam.toUpperCase() !== userTeam.toUpperCase()) {
+      // Player moved to different team, remove from view if it exists
+      console.log('[Real-time Update] Player moved to different team, removing from Assistant Coach view');
+      if (row) {
+        row.remove();
+        updateKpis();
+      }
+      // Also hide the details card if it's open for this player
+      const detailModal = document.querySelector('.player-detail-modal');
+      if (detailModal && detailModal.style.display !== 'none') {
+        const detailPlayerId = detailModal.getAttribute('data-player-id');
+        if (detailPlayerId === player._id.toString()) {
+          detailModal.style.display = 'none';
+        }
+      }
+      return;
+    }
+  }
+
+  // Check if player matches current filter
+  const teamFilter = currentTeamFilter || 'all';
+  const shouldShow = teamFilter === 'all' || playerTeam.toUpperCase() === teamFilter.toUpperCase();
+  const searchTerm = document.getElementById('playerSearch')?.value.toLowerCase() || '';
+  const playerName = (player.name || '').toLowerCase();
+  const matchesSearch = !searchTerm || playerName.includes(searchTerm);
+
+  console.log('[Real-time Update] Should show:', shouldShow, 'Matches search:', matchesSearch);
+
+  if (shouldShow && matchesSearch) {
+    // Update existing row or create new one
+    if (row) {
+      const tr = document.createElement('tr');
+      tr.setAttribute('data-id', player._id);
+      tr.setAttribute('data-team', playerTeam);
+      tr.setAttribute('data-gender', player.gender || '');
+      tr.innerHTML = `
+        <td>${player.nccRef || '-'}</td>
+        <td>${player.name || '-'}</td>
+        <td>${playerTeam || '-'}</td>
+        <td>${player.beltRank || '-'}</td>
+        <td>${player.birthdate ? player.birthdate.slice(0,10) : '-'}</td>
+        <td>
+          <button class="btn btn-edit" data-id="${player._id}" title="Edit Player">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn btn-delete" data-id="${player._id}" title="Delete Player">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      `;
+      tr.addEventListener('click', () => {
+        if (typeof showDetails === 'function') {
+          showDetails(player);
+        }
+      });
+      row.replaceWith(tr);
+      if (typeof attachEditDeleteListeners === 'function') {
+        attachEditDeleteListeners();
+      }
+      console.log('[Real-time Update] Updated existing row');
+    } else {
+      // Row doesn't exist but should be shown - create it
+      console.log('[Real-time Update] Creating new row');
+      handlePlayerCreated(player);
+    }
+  } else {
+    // Player no longer matches filter, remove it
+    if (row) {
+      console.log('[Real-time Update] Removing row - no longer matches filter');
+      row.remove();
+    }
+  }
+
+  updateKpis();
+}
+
+function handlePlayerDeleted(playerId) {
+  const row = document.querySelector(`#playerTable tbody tr[data-id="${playerId}"]`);
+  if (row) {
+    row.remove();
+    updateKpis();
+  }
+}
+
+// Real-time account handlers
+function handleAccountCreated(account) {
+  // Only update if we're on the accounts section and user is admin
+  const accountsSection = document.getElementById('sec-accounts');
+  if (!accountsSection || !accountsSection.classList.contains('visible')) {
+    return;
+  }
+
+  if (currentUserRole !== 'admin') {
+    return;
+  }
+
+  // Reload accounts table
+  if (typeof loadAccounts === 'function') {
+    loadAccounts();
+  }
+}
+
+function handleAccountUpdated(account) {
+  // Only update if we're on the accounts section and user is admin
+  const accountsSection = document.getElementById('sec-accounts');
+  if (!accountsSection || !accountsSection.classList.contains('visible')) {
+    return;
+  }
+
+  if (currentUserRole !== 'admin') {
+    return;
+  }
+
+  // Reload accounts table
+  if (typeof loadAccounts === 'function') {
+    loadAccounts();
+  }
+}
+
+function handleAccountDeleted(accountId, role) {
+  // Only update if we're on the accounts section and user is admin
+  const accountsSection = document.getElementById('sec-accounts');
+  if (!accountsSection || !accountsSection.classList.contains('visible')) {
+    return;
+  }
+
+  if (currentUserRole !== 'admin') {
+    return;
+  }
+
+  // Remove row directly
+  const row = document.querySelector(`#accountsTableBody tr[data-id="${accountId}"][data-role="${role}"]`);
+  if (row) {
+    row.remove();
+  }
+}
 
 
 const originalFetch = window.fetch;
@@ -129,9 +452,33 @@ document.addEventListener('DOMContentLoaded', () => {
         res = { ok: false };
       }
       if (res.ok) {
-        // All authenticated users (admin, coach, assistant) go to dashboard
+        // All authenticated users (admin, coach, assistant) - close modal and navigate
         console.log('Login successful for role:', result.role);
-        window.location.href = 'dashboard.html';
+        
+        // Close login modal
+        if (loginModal) {
+          loginModal.classList.add('hidden');
+        }
+        
+        // Clear any error messages
+        const errEl = document.getElementById('loginError');
+        if (errEl) {
+          errEl.textContent = '';
+          errEl.classList.remove('shake');
+        }
+        
+        // Reset form
+        if (loginForm) {
+          loginForm.reset();
+        }
+        
+        // If on index page, navigate to dashboard
+        if (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/')) {
+          window.location.href = 'dashboard.html';
+        } else {
+          // If already on dashboard, reload to refresh authentication state
+          window.location.reload();
+        }
       } else {
         const errEl = document.getElementById('loginError');
         if (errEl) {
@@ -222,10 +569,47 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function loadPlayerProfile(player) {
+      // Set dynamic background based on team
+      const heroBackground = document.querySelector('.hero-background');
+      const profileHero = document.querySelector('.profile-hero');
+      if (heroBackground && player.team) {
+        // Map team names to background images
+        const teamImages = {
+          'EARIST': '../public/EARIST.jpg',
+          'ERVHS': '../public/ERVHS.jpg',
+          'ARISE': '../public/1bg_arise.png',
+          'TONDO': '../public/TONDO.png',
+          'RECTO': '../public/RECTO.jpg'
+        };
+        
+        const teamName = (player.team || '').toUpperCase().trim();
+        const backgroundImage = teamImages[teamName] || teamImages['ARISE']; // Default to ARISE
+        
+        // Set background image with overlay
+        heroBackground.style.backgroundImage = `linear-gradient(rgba(10,10,20,0.7), rgba(10,10,20,0.7)), url('${backgroundImage}')`;
+        heroBackground.style.backgroundSize = 'cover';
+        heroBackground.style.backgroundPosition = 'center center';
+        heroBackground.style.backgroundRepeat = 'no-repeat';
+        
+        // Also update profile-hero background for consistency
+        if (profileHero) {
+          profileHero.style.backgroundImage = `linear-gradient(rgba(156, 51, 40, 0.6), rgba(156, 51, 40, 0.6)), url('${backgroundImage}')`;
+          profileHero.style.backgroundSize = 'cover';
+          profileHero.style.backgroundPosition = 'center center';
+          profileHero.style.backgroundRepeat = 'no-repeat';
+        }
+      }
+      
       // Hero Section
             document.getElementById('profileName').textContent = player.name;
             document.getElementById('profileNccRef').textContent = player.nccRef;
             document.getElementById('profileGender').textContent = player.gender || '-';
+      
+      // Set team meta-item
+      const profileTeamEl = document.getElementById('profileTeam');
+      if (profileTeamEl) {
+        profileTeamEl.textContent = player.team ? `Team: ${player.team}` : '-';
+      }
       
       // Calculate age
       if (player.birthdate) {
@@ -437,14 +821,13 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Greeting element not found!');
           }
         } else if (response.status === 401) {
-          console.log('User not authenticated, redirecting to login...');
-          // Hide greeting and redirect to login
+          // User not authenticated - silently handle (checkAuth will handle redirect)
           const greeting = document.getElementById('userGreeting');
           if (greeting) {
             greeting.style.display = 'none';
           }
-          // Redirect to login page
-          window.location.href = 'login.html';
+          // Don't show modal on dashboard - checkAuth will redirect
+          return;
         } else {
           console.log('Failed to fetch user data, status:', response.status);
           const userNameEl = document.getElementById('userName');
@@ -474,7 +857,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check if user is authenticated first
     async function checkAuth() {
       try {
-        console.log('Checking authentication...');
         const response = await fetch(`${API_BASE}/auth/me`, {
           credentials: 'include',
           method: 'GET',
@@ -483,7 +865,10 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
 
-        console.log('Auth response status:', response.status);
+        // Only log auth status in development or if there's an actual error
+        if (!response.ok && response.status !== 401) {
+          console.log('Auth response status:', response.status);
+        }
 
         if (response.ok) {
           // User is authenticated, load data and show greeting
@@ -491,12 +876,28 @@ document.addEventListener('DOMContentLoaded', () => {
           console.log('User authenticated with role:', userData.role);
           console.log('User data:', userData);
           
+          // Set currentUserTeam immediately for Socket.io handlers
+          if (userData.team) {
+            currentUserTeam = userData.team;
+            console.log('[Auth] Set currentUserTeam:', currentUserTeam);
+          }
+          
           // Update navigation based on user role
           updateNavigationForRole(userData.role);
+          
+          // Immediately remove team tabs if Assistant Coach (before async operations)
+          if (userData.role === 'assistant' && userData.team) {
+            updateTeamFilterVisibility(userData.role, userData.team);
+          }
           
           await loadUserData();
           const greeting = document.getElementById('userGreeting');
           if (greeting) {
+            // Clear any login message if it exists
+            const loginMsg = greeting.querySelector('div[style*="color: #dc2626"]');
+            if (loginMsg) {
+              greeting.innerHTML = ''; // Clear the login message
+            }
             greeting.style.display = 'block';
           }
           
@@ -505,40 +906,61 @@ document.addEventListener('DOMContentLoaded', () => {
             restoreLastActiveSection();
           }, 100);
         } else {
-          // User not authenticated, redirect to login
-          console.log('User not authenticated, status:', response.status);
-          alert('Please log in to access the admin dashboard.');
-          window.location.href = 'login.html';
+          // User not authenticated
+          // Allow dashboard to load for viewing/testing - NO REDIRECT
+          if (window.location.pathname.includes('dashboard.html')) {
+            console.log('User not authenticated - dashboard in view-only mode');
+            // Only show message if there's no user data loaded (avoid showing after successful login)
+            const greeting = document.getElementById('userGreeting');
+            const userNameEl = document.getElementById('userName');
+            const hasUserData = userNameEl && userNameEl.textContent && userNameEl.textContent !== 'User' && userNameEl.textContent !== 'Loading...';
+            
+            if (greeting && !hasUserData) {
+              greeting.innerHTML = '<div style="padding: 2rem; text-align: center;"><p style="color: #dc2626; font-size: 1.2rem; margin-bottom: 1rem;">Please log in to access the dashboard</p><a href="index.html" style="display: inline-block; padding: 0.75rem 2rem; background: #dc2626; color: white; text-decoration: none; border-radius: 8px;">Go to Login</a></div>';
+              greeting.style.display = 'block';
+            }
+            // Page loads normally, but protected features won't work without login
+            return;
+          }
+          // For other pages, show modal if available
+          if (loginModal && !window.location.pathname.includes('dashboard.html')) {
+            loginModal.classList.remove('hidden');
+          } else if (!window.location.pathname.endsWith('index.html')) {
+            window.location.href = 'index.html';
+          }
           return;
         }
       } catch (error) {
         console.log('Auth check failed:', error);
-        // SECURITY: Redirect to login on any error
-        alert('Unable to verify authentication. Please log in again.');
-        window.location.href = 'login.html';
+        // Allow dashboard to load even on error (for testing/viewing) - NO REDIRECT
+        if (window.location.pathname.includes('dashboard.html')) {
+          console.log('Authentication check failed - dashboard in view-only mode');
+          const greeting = document.getElementById('userGreeting');
+          const userNameEl = document.getElementById('userName');
+          const hasUserData = userNameEl && userNameEl.textContent && userNameEl.textContent !== 'User' && userNameEl.textContent !== 'Loading...';
+          
+          if (greeting && !hasUserData) {
+            greeting.innerHTML = '<div style="padding: 2rem; text-align: center;"><p style="color: #dc2626; font-size: 1.2rem; margin-bottom: 1rem;">Please log in to access the dashboard</p><a href="index.html" style="display: inline-block; padding: 0.75rem 2rem; background: #dc2626; color: white; text-decoration: none; border-radius: 8px;">Go to Login</a></div>';
+            greeting.style.display = 'block';
+          }
+          // Page loads normally for viewing/testing
+          return;
+        }
+        // For other pages, show modal if available
+        if (loginModal && !window.location.pathname.includes('dashboard.html')) {
+          loginModal.classList.remove('hidden');
+        } else if (!window.location.pathname.endsWith('index.html')) {
+          window.location.href = 'index.html';
+        }
         return;
       }
     }
     
+    // Initialize Socket.io connection
+    initSocket();
+    
     // Check authentication and load data
     checkAuth();
-    
-    // Set up periodic authentication check to prevent unexpected session expiry
-    setInterval(async () => {
-      try {
-        const response = await fetch(`${API_BASE}/auth/me`, {
-          credentials: 'include',
-          method: 'GET'
-        });
-        
-        if (!response.ok) {
-          console.log('Session check failed, user may need to re-authenticate');
-          // Don't redirect immediately, just log the issue
-        }
-      } catch (error) {
-        console.log('Session check error:', error);
-      }
-    }, 30000); // Check every 30 seconds
     
     // Initialize greeting visibility for home section
     document.body.classList.add('home-section');
@@ -570,7 +992,32 @@ document.addEventListener('DOMContentLoaded', () => {
     attachExportListeners();
 
     // Role-based navigation control
-    let currentUserRole = null;
+    // currentUserRole is declared globally above for Socket.io handlers
+
+    // Function to update team filter buttons based on user role and team
+    function updateTeamFilterVisibility(role, team) {
+      const teamFilterButtons = document.querySelectorAll('.team-filter-btn');
+      
+      if (role === 'assistant' && team) {
+        // For Assistant Coach, remove all team tabs except their assigned team
+        teamFilterButtons.forEach(btn => {
+          const btnTeam = btn.getAttribute('data-team');
+          if (btnTeam === 'all' || btnTeam !== team) {
+            // Remove buttons that are not the Assistant Coach's assigned team
+            btn.remove();
+          } else {
+            // Keep and activate their assigned team button
+            btn.classList.add('active');
+          }
+        });
+      } else {
+        // For Admin and Coach, ensure all team buttons are present and visible
+        // (Buttons should already exist in HTML, just make sure they're visible)
+        teamFilterButtons.forEach(btn => {
+          btn.style.display = '';
+        });
+      }
+    }
 
     // Function to update navigation based on user role
     function updateNavigationForRole(role) {
@@ -614,6 +1061,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (response.ok) {
           const userData = await response.json();
           console.log('Current user role:', userData.role);
+          // Also set currentUserTeam if available
+          if (userData.team && typeof currentUserTeam !== 'undefined') {
+            currentUserTeam = userData.team;
+            console.log('Current user team set:', currentUserTeam);
+          }
           return userData.role;
         } else {
           console.log('Failed to get user role');
@@ -703,6 +1155,18 @@ document.addEventListener('DOMContentLoaded', () => {
               passwordField.setAttribute('required', 'required');
               passwordField.placeholder = 'Enter password';
             }
+            // Reset team field
+            const teamField = document.getElementById('accountTeam');
+            if (teamField) {
+              teamField.removeAttribute('disabled');
+              teamField.removeAttribute('required');
+              teamField.value = '';
+            }
+            // Reset role field to trigger team field requirement logic
+            const roleField = document.getElementById('accountRole');
+            if (roleField) {
+              roleField.value = '';
+            }
           }
         }
       });
@@ -732,6 +1196,34 @@ document.addEventListener('DOMContentLoaded', () => {
       cancelAccountBtn.addEventListener('click', () => {
         if (accountModal) {
           accountModal.classList.add('hidden');
+        }
+      });
+    }
+
+    // Handle Account Role Change - Show/hide team requirement
+    const accountRoleField = document.getElementById('accountRole');
+    const accountTeamField = document.getElementById('accountTeam');
+    if (accountRoleField && accountTeamField) {
+      accountRoleField.addEventListener('change', (e) => {
+        const selectedRole = e.target.value;
+        if (selectedRole === 'admin') {
+          accountTeamField.disabled = true;
+          accountTeamField.removeAttribute('required');
+          accountTeamField.value = '';
+          accountTeamField.title = 'Admin accounts have access to all teams';
+        } else if (selectedRole === 'assistant') {
+          accountTeamField.disabled = false;
+          accountTeamField.setAttribute('required', 'required');
+          accountTeamField.title = 'Team is required for Assistant Coach';
+        } else if (selectedRole === 'coach') {
+          accountTeamField.disabled = false;
+          accountTeamField.removeAttribute('required');
+          accountTeamField.value = '';
+          accountTeamField.title = 'Coach can be assigned to a specific team or have access to all teams';
+        } else {
+          accountTeamField.disabled = false;
+          accountTeamField.removeAttribute('required');
+          accountTeamField.title = '';
         }
       });
     }
@@ -816,6 +1308,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Re-enable all fields for add mode
             const nameField = document.getElementById('accountName');
             const emailField = document.getElementById('accountEmail');
+            const teamField = document.getElementById('accountTeam');
             
             if (nameField) {
               nameField.disabled = false;
@@ -826,6 +1319,12 @@ document.addEventListener('DOMContentLoaded', () => {
               emailField.disabled = false;
               emailField.placeholder = '';
               emailField.title = '';
+            }
+            if (teamField) {
+              teamField.disabled = false;
+              teamField.removeAttribute('required');
+              teamField.value = '';
+              teamField.title = '';
             }
             // Refresh the accounts list with a small delay to ensure DB is updated
             console.log('Refreshing accounts list after successful update...');
@@ -886,7 +1385,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (accounts.length === 0) {
         console.log('No accounts to display');
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #666;">No accounts found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: #666;">No accounts found</td></tr>';
         return;
       }
 
@@ -910,6 +1409,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </span>
           </td>
           <td>${account.email || '-'}</td>
+          <td>${account.team || (account.role === 'admin' ? 'All Teams' : '-')}</td>
           <td>
             <button class="btn btn-sm btn-edit" onclick="editAccount('${account._id}', '${account.role}')">
               <i class="fas fa-edit"></i>
@@ -971,6 +1471,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('accountName').value = account.name || account.username;
             document.getElementById('accountUsername').value = account.username;
             document.getElementById('accountEmail').value = account.email || '';
+            document.getElementById('accountTeam').value = account.team || '';
             document.getElementById('accountRole').value = account.role;
             
             console.log('Form populated with values:');
@@ -993,9 +1494,10 @@ document.addEventListener('DOMContentLoaded', () => {
               passwordField.placeholder = 'Leave blank to keep current password';
             }
             
-            // Disable name and email fields for admin accounts
+            // Disable name, email, and team fields for admin accounts
             const nameField = document.getElementById('accountName');
             const emailField = document.getElementById('accountEmail');
+            const teamField = document.getElementById('accountTeam');
             
             if (account.role === 'admin') {
               if (nameField) {
@@ -1008,6 +1510,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 emailField.placeholder = 'Email not supported for admin accounts';
                 emailField.title = 'Admin accounts do not have email';
               }
+              if (teamField) {
+                teamField.disabled = true;
+                teamField.value = '';
+                teamField.title = 'Admin accounts have access to all teams';
+              }
             } else {
               if (nameField) {
                 nameField.disabled = false;
@@ -1018,6 +1525,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 emailField.disabled = false;
                 emailField.placeholder = '';
                 emailField.title = '';
+              }
+              if (teamField) {
+                teamField.disabled = false;
+                // Team is required for Assistant Coach
+                if (account.role === 'assistant') {
+                  teamField.setAttribute('required', 'required');
+                } else {
+                  teamField.removeAttribute('required');
+                }
+                teamField.title = '';
               }
             }
             
@@ -1149,12 +1666,24 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(players => {
           if (!tbody) return;
           if (Array.isArray(players)) {
-            players.forEach(player => {
+            // For Assistant Coach: Filter players before displaying to prevent showing all teams
+            let filteredPlayers = players;
+            if (currentUserRole === 'assistant' && currentUserTeam) {
+              const userTeamUpper = (currentUserTeam || '').toUpperCase().trim();
+              filteredPlayers = players.filter(player => {
+                const playerTeam = (player.team || '').toUpperCase().trim();
+                return playerTeam === userTeamUpper;
+              });
+              // Ensure filter is set correctly
+              currentTeamFilter = currentUserTeam;
+            }
+            
+            filteredPlayers.forEach(player => {
               const tr = document.createElement('tr');
               tr.innerHTML = `
                 <td>${player.nccRef}</td>
                 <td>${player.name}</td>
-                <td>${player.gender || '-'}</td>
+                <td>${player.team || '-'}</td>
                 <td>${player.beltRank}</td>
                 <td>${player.birthdate ? player.birthdate.slice(0,10) : '-'}</td>
                 <td>
@@ -1166,12 +1695,23 @@ document.addEventListener('DOMContentLoaded', () => {
                   </button>
                 </td>
               `;
+              // Add data attributes for filtering
+              tr.setAttribute('data-team', player.team || '');
+              tr.setAttribute('data-gender', player.gender || '');
+              tr.setAttribute('data-id', player._id);
               tr.addEventListener('click', () => showDetails(player));
               tbody.appendChild(tr);
             });
           }
+          if (typeof attachEditDeleteListeners === 'function') {
           attachEditDeleteListeners();
+          }
           attachExportListeners();
+          
+          // Apply filters immediately after loading players (especially for Assistant Coach)
+          if (typeof applyPlayerFilters === 'function') {
+            applyPlayerFilters();
+          }
           
           // Add scrollable indicator if content overflows
           setTimeout(() => {
@@ -1199,14 +1739,91 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Client-side filter on the table
     const searchInput = document.getElementById('playerSearch');
+    // currentTeamFilter is declared globally above for Socket.io handlers
+    
     if (searchInput) {
       searchInput.addEventListener('input', () => {
-        const q = searchInput.value.toLowerCase();
-        const rows = document.querySelectorAll('#playerTable tbody tr');
-        rows.forEach(row => {
-          const text = row.textContent.toLowerCase();
-          row.style.display = text.includes(q) ? '' : 'none';
+        applyPlayerFilters();
+      });
+    }
+    
+    // Team filter buttons functionality
+    const teamFilterButtons = document.querySelectorAll('.team-filter-btn');
+    // currentUserTeam is declared globally above for Socket.io handlers
+    
+    // Get user's team information
+    async function getUserTeam() {
+      try {
+        const response = await fetch(`${API_BASE}/auth/me`, {
+          credentials: 'include',
+          method: 'GET'
         });
+        if (response.ok) {
+          const userData = await response.json();
+          return userData.team || null;
+        }
+      } catch (error) {
+        console.error('Error getting user team:', error);
+      }
+      return null;
+    }
+    
+    // Initialize team filter after user data is loaded
+    setTimeout(async () => {
+      currentUserTeam = await getUserTeam();
+      setupTeamFilters();
+      
+      // For Assistant Coach, remove all team tabs except their assigned team
+      if (currentUserRole === 'assistant' && currentUserTeam) {
+        currentTeamFilter = currentUserTeam;
+        // Use the updateTeamFilterVisibility function which removes buttons
+        updateTeamFilterVisibility(currentUserRole, currentUserTeam);
+        // Apply filter to show only their team
+        applyPlayerFilters();
+      } else {
+        // For Admin and Coach, ensure all team buttons are visible
+        const teamFilterButtons = document.querySelectorAll('.team-filter-btn');
+        teamFilterButtons.forEach(btn => {
+          btn.style.display = '';
+        });
+      }
+    }, 100);
+    
+    function setupTeamFilters() {
+      // Re-query buttons in case some were removed (for Assistant Coach)
+      const currentButtons = document.querySelectorAll('.team-filter-btn');
+      currentButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const selectedTeam = e.target.getAttribute('data-team');
+          
+          // Update active button
+          document.querySelectorAll('.team-filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentTeamFilter = selectedTeam;
+          
+          // Apply filters
+          applyPlayerFilters();
+        });
+      });
+    }
+    
+    // Apply both search and team filters
+    function applyPlayerFilters() {
+      const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+        const rows = document.querySelectorAll('#playerTable tbody tr');
+      
+        rows.forEach(row => {
+        const team = row.getAttribute('data-team') || '';
+          const text = row.textContent.toLowerCase();
+        
+        // Check team filter
+        const teamMatch = currentTeamFilter === 'all' || team === currentTeamFilter;
+        
+        // Check search filter
+        const searchMatch = !searchTerm || text.includes(searchTerm);
+        
+        // Show row if both filters match
+        row.style.display = (teamMatch && searchMatch) ? '' : 'none';
       });
     }
 
@@ -1345,11 +1962,19 @@ document.addEventListener('DOMContentLoaded', () => {
           });
           if (res.ok) {
             playerModal.classList.add('hidden');
-            loadPlayers();
             
             // Log activity
             const action = editingPlayerId ? 'updated' : 'added';
             await logActivity(`${action} a player`, `Player: ${data.name}`);
+            
+            // For Assistant Coach: Ensure team filter is set before reloading
+            if (currentUserRole === 'assistant' && currentUserTeam) {
+              currentTeamFilter = currentUserTeam;
+            }
+            
+            // Reload players to refresh the table (filter will be applied immediately in loadPlayers callback)
+            loadPlayers();
+            
             loadRecentHistory(); // Refresh recent history
           } else {
             const err = await res.json().catch(() => ({}));
@@ -1441,11 +2066,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       const searchWrap = document.getElementById('playersSearchWrap');
+      const teamsFilterContainer = document.getElementById('teamsFilterContainer');
       const addBtn = document.getElementById('addPlayerBtn');
       const ex1 = document.getElementById('exportExcelBtn');
       const ex2 = document.getElementById('importExcelBtn');
       const isPlayers = key === 'players';
-      [searchWrap, addBtn, ex1, ex2].forEach(el => { if (!el) return; el.style.display = isPlayers ? '' : 'none'; });
+      [searchWrap, teamsFilterContainer, addBtn, ex1, ex2].forEach(el => { if (!el) return; el.style.display = isPlayers ? '' : 'none'; });
       
       // Load accounts when accounts section is shown
       if (key === 'accounts') {
@@ -1513,21 +2139,20 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateKpis() {
       const rows = Array.from(document.querySelectorAll('#playerTable tbody tr'));
       const total = rows.length;
-      let male = 0, female = 0, upcoming = 0;
+      let male = 0, female = 0;
       rows.forEach(r => {
-        const genderCell = r.children[2]; // Gender is now in column 2 (0-indexed)
-        if (genderCell) {
-          const g = genderCell.textContent.trim().toLowerCase();
-          if (g === 'male') male++; else if (g === 'female') female++;
+        // Count by gender from data attribute
+        const gender = r.getAttribute('data-gender') || '';
+        if (gender.toUpperCase() === 'MALE') {
+          male++;
+        } else if (gender.toUpperCase() === 'FEMALE') {
+          female++;
         }
       });
-      // Upcoming exams is a placeholder until backend field exists
-      upcoming = Math.max(0, Math.round(total * 0.2));
       const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = String(v); };
       setText('kpiPlayers', total);
       setText('kpiMale', male);
       setText('kpiFemale', female);
-      setText('kpiExams', upcoming);
     }
     // Recompute when players load
     setTimeout(updateKpis, 800);
@@ -1551,12 +2176,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (response.ok) {
           const data = await response.json();
           displayRecentHistory(data.activities || []);
+        } else if (response.status === 401) {
+          // Silently handle 401 - user not authenticated, checkAuth will handle redirect
+          displayRecentHistory([]);
         } else {
+          // Only log non-auth errors
           console.error('Failed to load recent history:', response.status);
           displayRecentHistory([]);
         }
       } catch (error) {
-        console.error('Error loading recent history:', error);
+        // Only log network errors, not auth failures
+        if (error.message && !error.message.includes('401')) {
+          console.error('Error loading recent history:', error);
+        }
         displayRecentHistory([]);
       }
     }
@@ -1686,11 +2318,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Handle authentication errors specifically
                 if (response.status === 401) {
                   errorMessage = 'Your session has expired. Please log in again.';
-                  if (!window.location.pathname.endsWith('login.html')) {
-                    alert(errorMessage);
-                    window.location.href = 'login.html';
-                    return;
+                  alert(errorMessage);
+                  // Show login modal instead of redirecting
+                  if (loginModal) {
+                    loginModal.classList.remove('hidden');
+                  } else if (!window.location.pathname.endsWith('index.html')) {
+                    window.location.href = 'index.html';
                   }
+                  return;
                 }
               } catch (e) {
                 console.error('Could not parse error response:', e);
@@ -1758,7 +2393,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!sessionCheck.ok) {
               console.log('Session invalid, aborting import');
               alert('Your session has expired. Please log in again.');
-              window.location.href = 'login.html';
+              // Show login modal instead of redirecting
+              if (loginModal) {
+                loginModal.classList.remove('hidden');
+              } else if (!window.location.pathname.endsWith('index.html')) {
+                window.location.href = 'index.html';
+              }
               return;
             }
 
@@ -1807,11 +2447,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Handle authentication errors specifically
                 if (response.status === 401) {
                   errorMessage = 'Your session has expired. Please log in again.';
-                  if (!window.location.pathname.endsWith('login.html')) {
-                    alert(errorMessage);
-                    window.location.href = 'login.html';
-                    return;
+                  alert(errorMessage);
+                  // Show login modal instead of redirecting
+                  if (loginModal) {
+                    loginModal.classList.remove('hidden');
+                  } else if (!window.location.pathname.endsWith('index.html')) {
+                    window.location.href = 'index.html';
                   }
+                  return;
                 }
               } catch (e) {
                 console.error('Could not parse error response:', e);
@@ -1836,7 +2479,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Edit/Delete Logic ---
-    function attachEditDeleteListeners() {
+    window.attachEditDeleteListeners = function() {
       document.querySelectorAll('.btn-edit').forEach(btn => {
         btn.addEventListener('click', async () => {
           const id = btn.getAttribute('data-id');
@@ -1849,6 +2492,7 @@ document.addEventListener('DOMContentLoaded', () => {
             playerForm.beltRank.value = player.beltRank;
             playerForm.birthdate.value = player.birthdate ? player.birthdate.slice(0,10) : '';
             if (playerForm.gender) { playerForm.gender.value = player.gender || ''; }
+            if (playerForm.team) { playerForm.team.value = player.team || ''; }
             // No text field for photo URL now
             playerForm.address.value = player.address || '';
             playerForm.contactNumber.value = player.contactNumber || '';
@@ -1881,7 +2525,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
       });
-    }
+    };
     // --- End Edit/Delete Logic ---
 
     // Details panel
@@ -2021,12 +2665,12 @@ document.addEventListener('click', (e) => {
   
   // Handle admin sidebar
   if (adminShell && adminSidebar) {
-    if (!adminShell.classList.contains('sidebar-open')) return;
-    const insideSidebar = e.target.closest && e.target.closest('.admin-sidebar');
-    const clickedToggle = e.target.closest && e.target.closest('#ptaNavbarToggle');
-    if (!insideSidebar && !clickedToggle) {
-      adminShell.classList.remove('sidebar-open');
-      if (navToggle) navToggle.classList.remove('active');
+  if (!adminShell.classList.contains('sidebar-open')) return;
+  const insideSidebar = e.target.closest && e.target.closest('.admin-sidebar');
+  const clickedToggle = e.target.closest && e.target.closest('#ptaNavbarToggle');
+  if (!insideSidebar && !clickedToggle) {
+    adminShell.classList.remove('sidebar-open');
+    if (navToggle) navToggle.classList.remove('active');
     }
   }
 });
@@ -2043,9 +2687,9 @@ document.addEventListener('keydown', (e) => {
     
     // Handle admin sidebar
     if (adminShell && adminShell.classList.contains('sidebar-open')) {
-      adminShell.classList.remove('sidebar-open');
-      if (navToggle) navToggle.classList.remove('active');
-    }
+    adminShell.classList.remove('sidebar-open');
+    if (navToggle) navToggle.classList.remove('active');
+  }
   }
 
   // Check Another Player Sliding Container Functions
@@ -2092,18 +2736,20 @@ document.addEventListener('keydown', (e) => {
   }
 
   // Add event listeners for Check Another Player functionality
+  // Only run on pages that have these elements (e.g., player profile page)
   function attachCheckPlayerListeners() {
     const checkAnotherPlayerBtn = document.getElementById('checkAnotherPlayerBtn');
     const checkPlayerClose = document.getElementById('checkPlayerClose');
     const checkPlayerContainer = document.getElementById('checkPlayerContainer');
-    const checkPlayerForm = document.getElementById('checkPlayerForm');
 
-    console.log('Attaching Check Player listeners...', {
-      checkAnotherPlayerBtn: !!checkAnotherPlayerBtn,
-      checkPlayerClose: !!checkPlayerClose,
-      checkPlayerContainer: !!checkPlayerContainer,
-      checkPlayerForm: !!checkPlayerForm
-    });
+    // Only proceed if at least the container exists (page has this feature)
+    if (!checkPlayerContainer) {
+      // Silently return if elements don't exist (not an error, just not on this page)
+      return;
+    }
+
+    // Only log if we're actually attaching listeners
+    console.log('Attaching Check Player listeners for player profile page...');
 
     if (checkAnotherPlayerBtn) {
       // Remove any existing listeners first
@@ -2113,8 +2759,6 @@ document.addEventListener('keydown', (e) => {
         console.log('Check Another Player button clicked');
         showCheckPlayerContainer();
       });
-    } else {
-      console.warn('Check Another Player button not found!');
     }
 
     if (checkPlayerClose) {
@@ -2139,15 +2783,17 @@ document.addEventListener('keydown', (e) => {
     }
   }
 
-  // Attach listeners immediately
-  attachCheckPlayerListeners();
-
-  // Also attach listeners after a short delay to ensure DOM is ready
-  setTimeout(attachCheckPlayerListeners, 100);
+  // Attach listeners once DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachCheckPlayerListeners);
+  } else {
+    attachCheckPlayerListeners();
+  }
 
   // Attach form listener separately
   function attachFormListener() {
     const checkPlayerForm = document.getElementById('checkPlayerForm');
+    // Only attach if form exists (on player profile page)
     if (checkPlayerForm) {
     checkPlayerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -2225,11 +2871,14 @@ document.addEventListener('keydown', (e) => {
     }
   }
 
-  // Attach form listener immediately and with delay
-  attachFormListener();
-  setTimeout(attachFormListener, 100);
+  // Attach form listener only if form exists
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachFormListener);
+  } else {
+    attachFormListener();
+  }
 
-  // Use event delegation as a fallback for the Check Another Player button
+  // Use event delegation for Check Another Player button (only works if button exists)
   document.addEventListener('click', (e) => {
     if (e.target && e.target.id === 'checkAnotherPlayerBtn') {
       e.preventDefault();
@@ -2237,21 +2886,6 @@ document.addEventListener('keydown', (e) => {
       showCheckPlayerContainer();
     }
   });
-
-  // Additional fallback - check if button exists and add listener directly
-  setTimeout(() => {
-    const btn = document.getElementById('checkAnotherPlayerBtn');
-    if (btn) {
-      console.log('Button found, adding direct listener');
-      btn.onclick = (e) => {
-        e.preventDefault();
-        console.log('Button clicked via onclick');
-        showCheckPlayerContainer();
-      };
-    } else {
-      console.warn('Button still not found after timeout');
-    }
-  }, 500);
 
   // Test function to verify container works
   window.testCheckPlayer = function() {

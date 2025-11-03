@@ -6,12 +6,33 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
 const { generalLimiter } = require('./middleware/rateLimiter');
 const { securityLogger } = require('./middleware/securityLogger');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: (origin, callback) => {
+      // Allow all localhost and 127.0.0.1 origins
+      if (!origin || /^http:\/\/(127\.0\.0\.1|localhost|0\.0\.0\.0)(:\d+)?$/.test(origin)) {
+        callback(null, true);
+      } else if (/^https:\/\/.*\.(onrender|railway|vercel|netlify)\.(com|app)$/.test(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Allow all for now
+      }
+    },
+    credentials: true
+  }
+});
+
+// Make io available to routes
+app.set('io', io);
 
 
 app.use(cors({
@@ -24,10 +45,16 @@ app.use(cors({
       return callback(null, true);
     }
     
-    // Allow localhost for development
-    const allowedLocal = /^http:\/\/(127\.0\.0\.1|localhost):\d+$/;
+    // Allow localhost for development (any port, including Live Server ports like 5500)
+    const allowedLocal = /^http:\/\/(127\.0\.0\.1|localhost|0\.0\.0\.0)(:\d+)?$/;
     if (allowedLocal.test(origin)) {
-      console.log('Localhost origin - allowing');
+      console.log('Localhost origin - allowing:', origin);
+      return callback(null, true);
+    }
+    
+    // Also allow common development server ports explicitly
+    if (origin && (origin.includes('127.0.0.1') || origin.includes('localhost'))) {
+      console.log('Local development origin detected - allowing:', origin);
       return callback(null, true);
     }
     
@@ -104,10 +131,12 @@ app.use(session({
     autoRemove: 'native'
   }),
   cookie: {
-    sameSite: 'none', // Allow cross-origin cookies
-    secure: true, // Required for sameSite: 'none'
+    // Use 'lax' and 'false' for localhost HTTP, 'none' and 'true' only for actual HTTPS production
+    sameSite: process.env.NODE_ENV === 'production' && process.env.USE_HTTPS === 'true' ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production' && process.env.USE_HTTPS === 'true', // true only for actual HTTPS production
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    httpOnly: true
+    httpOnly: true,
+    path: '/' // Ensure cookie is available for all paths
   }
 }));
 
@@ -168,5 +197,16 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+  
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
+
 const PORT = process.env.PORT || 4000;
+// Listen on all interfaces (0.0.0.0) to accept connections from both localhost and 127.0.0.1
+server.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`)); 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`)); 

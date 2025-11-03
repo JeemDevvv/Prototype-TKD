@@ -5,7 +5,7 @@ const Coach = require('../models/Coach');
 const AssistantCoach = require('../models/AssistantCoach');
 const bcrypt = require('bcrypt');
 const { authLimiter } = require('../middleware/rateLimiter');
-const { sanitizeInput, validateEmail, validatePassword, validateRequired } = require('../middleware/validation');
+const { sanitizeInput, validateRequired } = require('../middleware/validation');
 const { logAuthEvent, logSuspiciousActivity } = require('../middleware/securityLogger');
 
 // Support GET requests for login1 endpoint
@@ -19,57 +19,57 @@ router.post('/login1',
   sanitizeInput,
   validateRequired(['username', 'password']),
   async (req, res) => {
-    const { username, password, role } = req.body;
-    let user = null;
-    let resolvedRole = null;
+  const { username, password, role } = req.body;
+  let user = null;
+  let resolvedRole = null;
 
-    try {
+  try {
       // Log login attempt
       logAuthEvent('LOGIN_ATTEMPT', req, { username, role });
 
-      if (role === 'admin') {
-        user = await Admin.findOne({ username });
-        resolvedRole = 'admin';
-      } else if (role === 'coach') {
-        user = await Coach.findOne({ username });
-        resolvedRole = 'coach';
-      } else if (role === 'assistant') {
-        user = await AssistantCoach.findOne({ username });
-        resolvedRole = 'assistant';
-      } else {
-        user = await Admin.findOne({ username }) || await Coach.findOne({ username }) || await AssistantCoach.findOne({ username });
+    if (role === 'admin') {
+      user = await Admin.findOne({ username });
+      resolvedRole = 'admin';
+    } else if (role === 'coach') {
+      user = await Coach.findOne({ username });
+      resolvedRole = 'coach';
+    } else if (role === 'assistant') {
+      user = await AssistantCoach.findOne({ username });
+      resolvedRole = 'assistant';
+    } else {
+      user = await Admin.findOne({ username }) || await Coach.findOne({ username }) || await AssistantCoach.findOne({ username });
         if (!user) {
           logSuspiciousActivity('FAILED_LOGIN_UNKNOWN_ROLE', req, { username, role });
           return res.status(401).json({ message: 'Invalid Credentials' });
         }
-        
-        resolvedRole = user instanceof Admin ? 'admin' : (user instanceof Coach ? 'coach' : 'assistant');
-      }
+      
+      resolvedRole = user instanceof Admin ? 'admin' : (user instanceof Coach ? 'coach' : 'assistant');
+    }
 
       if (!user) {
         logSuspiciousActivity('FAILED_LOGIN_USER_NOT_FOUND', req, { username, role });
         return res.status(401).json({ message: 'Invalid Credentials' });
       }
 
-      const match = await bcrypt.compare(password, user.password);
+    const match = await bcrypt.compare(password, user.password);
       if (!match) {
         logSuspiciousActivity('FAILED_LOGIN_WRONG_PASSWORD', req, { username, role });
         return res.status(401).json({ message: 'Invalid Credentials' });
       }
 
       // Set session with additional security data
-      req.session.userId = user._id;
-      req.session.role = resolvedRole;
+    req.session.userId = user._id;
+    req.session.role = resolvedRole;
       req.session.createdAt = Date.now();
       req.session.userStatus = 'active';
 
       // Log successful login
       logAuthEvent('LOGIN_SUCCESS', req, { username, role, userId: user._id });
 
-      res.json({ message: 'Login successful', role: resolvedRole });
-    } catch (e) {
+    res.json({ message: 'Login successful', role: resolvedRole });
+  } catch (e) {
       logSuspiciousActivity('LOGIN_ERROR', req, { error: e.message, username, role });
-      res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error' });
     }
   }
 );
@@ -113,13 +113,30 @@ router.post('/login', async (req, res) => {
     req.session.createdAt = Date.now();
     req.session.userStatus = 'active';
     
+    // Store team information for access control (for Coach and Assistant Coach)
+    if (resolvedRole === 'coach' || resolvedRole === 'assistant') {
+      req.session.team = user.team || null;
+    } else {
+      req.session.team = null; // Admin has access to all teams
+    }
+    
     console.log('Session set:', {
       userId: req.session.userId,
       role: req.session.role,
+      team: req.session.team,
       sessionId: req.sessionID
     });
     
-    res.json({ message: 'Login successful', role: resolvedRole });
+    // Explicitly save session to ensure cookie is set
+    req.session.save((err) => {
+      if (err) {
+        console.error('Error saving session:', err);
+        return res.status(500).json({ message: 'Failed to save session' });
+      }
+      
+      console.log('Session saved successfully, sending response');
+      res.json({ message: 'Login successful', role: resolvedRole });
+    });
   } catch (e) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -155,7 +172,7 @@ router.get('/me', async (req, res) => {
         email: null
       });
     } else if (role === 'coach') {
-      user = await Coach.findById(userId).select('username name email');
+      user = await Coach.findById(userId).select('username name email team');
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
@@ -163,10 +180,11 @@ router.get('/me', async (req, res) => {
         username: user.username,
         name: user.name || user.username,
         role: role,
-        email: user.email || null
+        email: user.email || null,
+        team: user.team || null
       });
     } else if (role === 'assistant') {
-      user = await AssistantCoach.findById(userId).select('username name email');
+      user = await AssistantCoach.findById(userId).select('username name email team');
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
@@ -174,7 +192,8 @@ router.get('/me', async (req, res) => {
         username: user.username,
         name: user.name || user.username,
         role: role,
-        email: user.email || null
+        email: user.email || null,
+        team: user.team || null
       });
     }
 

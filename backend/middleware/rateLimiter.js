@@ -14,9 +14,10 @@ const generalLimiter = rateLimit({
 });
 
 // Strict rate limiter for auth endpoints
+// More lenient in development, strict in production
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 login attempts per windowMs
+  max: process.env.NODE_ENV === 'production' ? 5 : 50, // 5 attempts in production, 50 in development
   message: {
     error: 'Too many login attempts, please try again later.',
     code: 'AUTH_RATE_LIMIT_EXCEEDED'
@@ -24,6 +25,8 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Don't count successful requests
+  // In development, also skip failed requests to make testing easier
+  skip: (req) => process.env.NODE_ENV !== 'production' && process.env.DISABLE_RATE_LIMIT === 'true'
 });
 
 // Very strict rate limiter for sensitive operations

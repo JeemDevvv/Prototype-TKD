@@ -93,7 +93,6 @@
           <div class="kpi-card"><div class="kpi-label">Total Players</div><div class="kpi-value" id="kpiPlayers">0</div></div>
           <div class="kpi-card"><div class="kpi-label">Male</div><div class="kpi-value" id="kpiMale">0</div></div>
           <div class="kpi-card"><div class="kpi-label">Female</div><div class="kpi-value" id="kpiFemale">0</div></div>
-          <div class="kpi-card"><div class="kpi-label">Upcoming Exams</div><div class="kpi-value" id="kpiExams">0</div></div>
         </div>
         <div class="dash-card" style="margin-top:1rem;">
           <div class="dash-sub" style="margin-bottom:0.5rem">Recent History</div>
@@ -107,6 +106,17 @@
         <div class="dash-grid">
           <div class="dash-card">
             <div class="player-table-header">
+              <div class="teams-filter-container" id="teamsFilterContainer" style="display:none;">
+                <span class="teams-filter-label">Teams:</span>
+                <div class="teams-filter-buttons">
+                  <button type="button" class="team-filter-btn active" data-team="all">All</button>
+                  <button type="button" class="team-filter-btn" data-team="EARIST">EARIST</button>
+                  <button type="button" class="team-filter-btn" data-team="ERVHS">ERVHS</button>
+                  <button type="button" class="team-filter-btn" data-team="ARISE">ARISE</button>
+                  <button type="button" class="team-filter-btn" data-team="TONDO">TONDO</button>
+                  <button type="button" class="team-filter-btn" data-team="RECTO">RECTO</button>
+                </div>
+              </div>
               <div class="dash-search" id="playersSearchWrap" style="display:none">
                 <input id="playerSearch" type="text" placeholder="Search players..." aria-label="Search players">
               </div>
@@ -117,7 +127,7 @@
                   <tr>
                     <th>NCC Ref</th>
                     <th>Name</th>
-                    <th>Gender</th>
+                    <th>Team</th>
                     <th>Belt</th>
                     <th>Birthdate</th>
                     <th>Actions</th>
@@ -187,6 +197,7 @@
                   <th>Username</th>
                   <th>Role</th>
                   <th>Email</th>
+                  <th>Team</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -210,39 +221,65 @@
     <!-- Add/Edit Player Modal (hidden by default) -->
     <div id="playerModal" class="modal hidden">
       <form id="playerForm">
+        <!-- 1. Attach Photo -->
         <input type="file" id="photoFile" name="photoFile" accept="image/*" placeholder="Attach Photo">
         <div style="margin:0.5rem 0 1rem 0; display:flex; align-items:center; gap:0.8rem;">
           <img id="photoPreview" alt="Preview" style="width:100px; height:100px; object-fit:cover; border-radius:0.6rem; background:#eee; display:none;" />
           <small id="photoHint" style="color:#666;">PNG/JPG up to 2MB</small>
         </div>
-        <input type="text" name="name" placeholder="Name" required>
+        <!-- 2. Full Name -->
+        <input type="text" name="name" placeholder="Full Name" required>
+        <!-- Team field (required, placed after Full Name) -->
+        <div style="position: relative; width: 100%; margin-bottom: 1rem;">
+          <select name="team" required style="width: 100%; padding: 0.75rem; padding-right: 2.5rem; border: 1px solid #ddd; border-radius: 0.375rem; font-size: 1rem; background-color: white; appearance: none; margin: 0;">
+            <option value="">Select Team</option>
+            <option value="EARIST">EARIST</option>
+            <option value="ERVHS">ERVHS</option>
+            <option value="ARISE">ARISE</option>
+            <option value="TONDO">TONDO</option>
+            <option value="RECTO">RECTO</option>
+          </select>
+          <i class="fa-solid fa-caret-down" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); pointer-events: none; color: #666; font-size: 0.875rem;"></i>
+        </div>
+        <!-- 3. Gender -->
         <div style="position: relative; width: 100%;">
           <select name="gender" required style="width: 100%; padding: 0.75rem; padding-right: 2.5rem; border: 1px solid #ddd; border-radius: 0.375rem; font-size: 1rem; background-color: white; appearance: none; margin: 0;">
-            <option value="">Gender</option>
+            <option value="">Select Gender</option>
             <option value="Male">Male</option>
             <option value="Female">Female</option>
           </select>
           <i class="fa-solid fa-caret-down" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); pointer-events: none; color: #666; font-size: 0.875rem;"></i>
         </div>
-        <input type="date" name="birthdate" placeholder="Birthday">
+        <!-- 4. BirthDate -->
+        <input type="date" name="birthdate" placeholder="Birthdate">
+        <!-- 5. Address -->
         <input type="text" name="address" placeholder="Address">
-        <input type="text" name="contactNumber" placeholder="Contact #">
-        <input type="text" name="beltRank" placeholder="Belt Rank" required>
+        <!-- 6. Phone Number -->
+        <input type="text" name="contactNumber" placeholder="Phone Number">
+        <!-- 7. Current belt -->
+        <input type="text" name="beltRank" placeholder="Current Belt" required>
+        <!-- 8. Last promotion exam -->
         <input type="date" name="lastPromotionExam" placeholder="Last Promotion Exam">
-        <input type="text" name="competitions" placeholder="Competition na sinalihan (comma separated)">
-        <input type="text" name="nextBelt" placeholder="Next belt to take at next promo">
+        <!-- 9. Next belt -->
+        <input type="text" name="nextBelt" placeholder="Next Belt">
+        <!-- 10. Required forms -->
         <textarea id="requiredForms" name="requiredForms" placeholder="Specific forms needed to perform at self-defense" rows="3" maxlength="280"></textarea>
         <div style="text-align:right; font-size:0.9rem; color:#666; margin-top:-0.4rem; margin-bottom:0.6rem;">
           <span id="formsCounter">0/280</span>
         </div>
+        <!-- 11. Competition na sinalihan -->
+        <input type="text" name="competitions" placeholder="Competition na sinalihan (comma separated)">
+        <!-- 12. Achievements -->
         <input type="text" name="achievements" placeholder="Achievements (comma separated)">
-        <input type="text" name="nccRef" placeholder="NCC # (if meron)">
+        <!-- 13. NCC Ref Number -->
+        <input type="text" name="nccRef" placeholder="NCC Ref Number">
         <button type="submit" class="btn">Save</button>
         <button type="button" id="closeModalBtn" class="btn btn-cancel">Cancel</button>
       </form>
     </div>
   </main>
 
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="../js/main.js?v=2"></script>
   <link rel="icon" href="../public/logo.jpg">
 
@@ -292,13 +329,24 @@
           <label for="accountUsername">Username *</label>
           <input type="text" id="accountUsername" name="username" required>
         </div>
+        <div class="form-group" id="passwordGroup">
+          <label for="accountPassword">Password *</label>
+          <input type="password" id="accountPassword" name="password">
+        </div>
         <div class="form-group">
           <label for="accountEmail">Email *</label>
           <input type="email" id="accountEmail" name="email" required>
         </div>
-        <div class="form-group" id="passwordGroup">
-          <label for="accountPassword">Password *</label>
-          <input type="password" id="accountPassword" name="password">
+        <div class="form-group">
+          <label for="accountTeam">Team *</label>
+          <select id="accountTeam" name="team" required>
+            <option value="">Select Team</option>
+            <option value="EARIST">EARIST</option>
+            <option value="ERVHS">ERVHS</option>
+            <option value="ARISE">ARISE</option>
+            <option value="TONDO">TONDO</option>
+            <option value="RECTO">RECTO</option>
+          </select>
         </div>
         <div class="form-group">
           <label for="accountRole">Role *</label>
@@ -332,5 +380,6 @@
       </button>
     </div>
   </div>
+
 </body>
 </html> 

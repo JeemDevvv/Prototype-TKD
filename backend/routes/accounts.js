@@ -5,14 +5,19 @@ const Coach = require('../models/Coach');
 const AssistantCoach = require('../models/AssistantCoach');
 const bcrypt = require('bcrypt');
 
+// Helper function to get io from request
+function getIO(req) {
+  return req.app.get('io');
+}
+
 // Get all accounts
 router.get('/', async (req, res) => {
   try {
     console.log('=== GET ACCOUNTS REQUEST ===');
     
     const admins = await Admin.find().select('username createdAt');
-    const coaches = await Coach.find().select('username name email createdAt');
-    const assistants = await AssistantCoach.find().select('username name email createdAt');
+    const coaches = await Coach.find().select('username name email team createdAt');
+    const assistants = await AssistantCoach.find().select('username name email team createdAt');
 
     console.log('Admins found:', admins.length);
     console.log('Coaches found:', coaches.length);
@@ -38,7 +43,7 @@ router.get('/', async (req, res) => {
 // Create new account
 router.post('/', async (req, res) => {
   try {
-    const { username, password, role, name, email } = req.body;
+    const { username, password, role, name, email, team } = req.body;
     
     console.log('Received account data:', req.body);
     console.log('Role received:', role);
@@ -69,14 +74,19 @@ router.post('/', async (req, res) => {
         username, 
         password: hashedPassword, 
         name: name || username,
-        email: email || null 
+        email: email || null,
+        team: team || null // Coach can have team assigned or null for all teams access
       });
     } else if (role === 'assistant') {
+      if (!team) {
+        return res.status(400).json({ message: 'Team is required for Assistant Coach' });
+      }
       newAccount = new AssistantCoach({ 
         username, 
         password: hashedPassword, 
         name: name || username,
-        email: email || null 
+        email: email || null,
+        team: team // Assistant Coach must have a team assigned
       });
     } else {
       return res.status(400).json({ message: 'Invalid role' });
@@ -84,14 +94,24 @@ router.post('/', async (req, res) => {
 
     await newAccount.save();
 
+    const accountData = {
+      _id: newAccount._id,
+      username: newAccount.username,
+      role: role,
+      name: newAccount.name || newAccount.username,
+      email: newAccount.email || null,
+      team: newAccount.team || null
+    };
+
+    // Emit real-time event
+    const io = getIO(req);
+    if (io) {
+      io.emit('account:created', accountData);
+    }
+
     res.json({ 
       message: 'Account created successfully',
-      account: {
-        username: newAccount.username,
-        role: role,
-        name: newAccount.name || newAccount.username,
-        email: newAccount.email || null
-      }
+      account: accountData
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -102,7 +122,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, name, email, role, password } = req.body;
+    const { username, name, email, role, password, team } = req.body;
 
     console.log('=== UPDATE ACCOUNT REQUEST ===');
     console.log('Account ID:', id);
@@ -114,43 +134,144 @@ router.put('/:id', async (req, res) => {
     console.log('Has password:', !!password);
     console.log('===============================');
 
-    let account;
-    let AccountModel;
-
-    if (role === 'admin') {
-      AccountModel = Admin;
-    } else if (role === 'coach') {
-      AccountModel = Coach;
-    } else if (role === 'assistant') {
-      AccountModel = AssistantCoach;
-    } else {
-      return res.status(400).json({ message: 'Invalid role' });
+    // First, find the account in any of the three models to get its current role
+    let account = await Admin.findById(id);
+    let currentRole = 'admin';
+    let currentModel = Admin;
+    
+    if (!account) {
+      account = await Coach.findById(id);
+      if (account) {
+        currentRole = 'coach';
+        currentModel = Coach;
+      }
+    }
+    
+    if (!account) {
+      account = await AssistantCoach.findById(id);
+      if (account) {
+        currentRole = 'assistant';
+        currentModel = AssistantCoach;
+      }
     }
 
-    account = await AccountModel.findById(id);
     if (!account) {
       return res.status(404).json({ message: 'Account not found' });
     }
 
-    if (username) account.username = username;
+    console.log('Account found in model:', currentRole);
+    console.log('Current account data:', account);
+
+    // Check if role is being changed
+    const roleChanged = role && role !== currentRole;
     
-    // Only update name and email for roles that support them
-    if (role !== 'admin') {
-      if (name) account.name = name;
-      if (email !== undefined) account.email = email;
+    if (roleChanged) {
+      console.log('Role change detected:', currentRole, '->', role);
+      
+      // Validate new role
+      let NewAccountModel;
+      if (role === 'admin') {
+        NewAccountModel = Admin;
+      } else if (role === 'coach') {
+        NewAccountModel = Coach;
+      } else if (role === 'assistant') {
+        NewAccountModel = AssistantCoach;
+        if (!team) {
+          return res.status(400).json({ message: 'Team is required for Assistant Coach' });
+        }
+      } else {
+        return res.status(400).json({ message: 'Invalid role' });
+      }
+
+      // Prepare account data for the new model
+      const accountData = {
+        username: username || account.username,
+        password: account.password, // Keep current password initially
+        name: name || account.name || account.username,
+        email: email !== undefined ? email : (account.email || null),
+        team: role === 'admin' ? undefined : (team !== undefined ? team : (account.team || null))
+      };
+
+      // Update password if provided
+      if (password && password.trim() !== '') {
+        accountData.password = await bcrypt.hash(password, 10);
+      }
+
+      // Remove undefined fields
+      Object.keys(accountData).forEach(key => {
+        if (accountData[key] === undefined) delete accountData[key];
+      });
+
+      // Create account in new model
+      const newAccount = new NewAccountModel(accountData);
+      await newAccount.save();
+
+      console.log('New account created in', role, 'model with ID:', newAccount._id);
+
+      // Delete old account
+      await currentModel.findByIdAndDelete(id);
+      console.log('Old account deleted from', currentRole, 'model');
+
+      // Update reference to new account
+      account = newAccount;
     } else {
-      console.log('Admin account - skipping name and email updates (not supported)');
-    }
-    
-    // Only update password if provided
-    if (password && password.trim() !== '') {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      account.password = hashedPassword;
+      // Role not changed, update in place
+      let AccountModel;
+      if (role === 'admin') {
+        AccountModel = Admin;
+      } else if (role === 'coach') {
+        AccountModel = Coach;
+      } else if (role === 'assistant') {
+        AccountModel = AssistantCoach;
+      } else {
+        return res.status(400).json({ message: 'Invalid role' });
+      }
+
+      if (username) account.username = username;
+      
+      // Only update name, email, and team for roles that support them
+      if (role !== 'admin') {
+        if (name) account.name = name;
+        if (email !== undefined) account.email = email;
+        if (team !== undefined) {
+          // For Assistant Coach, team is required
+          if (role === 'assistant' && !team) {
+            return res.status(400).json({ message: 'Team is required for Assistant Coach' });
+          }
+          account.team = team;
+        }
+      } else {
+        console.log('Admin account - skipping name, email, and team updates (not supported)');
+      }
+      
+      // Only update password if provided
+      if (password && password.trim() !== '') {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        account.password = hashedPassword;
+      }
+
+      await account.save();
     }
 
-    await account.save();
+    const accountData = {
+      _id: account._id,
+      username: account.username,
+      role: role,
+      name: account.name || account.username,
+      email: account.email || null,
+      team: account.team || null
+    };
 
-    res.json({ message: 'Account updated successfully' });
+    // Emit real-time event
+    const io = getIO(req);
+    if (io) {
+      io.emit('account:updated', accountData);
+    }
+
+    res.json({ 
+      message: 'Account updated successfully',
+      account: accountData
+    });
   } catch (error) {
     console.error('Error updating account:', error);
     res.status(500).json({ message: 'Server error' });
@@ -178,6 +299,12 @@ router.delete('/:id', async (req, res) => {
     const account = await AccountModel.findByIdAndDelete(id);
     if (!account) {
       return res.status(404).json({ message: 'Account not found' });
+    }
+
+    // Emit real-time event
+    const io = getIO(req);
+    if (io) {
+      io.emit('account:deleted', { id, role });
     }
 
     res.json({ message: 'Account deleted successfully' });

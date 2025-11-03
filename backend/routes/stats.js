@@ -59,9 +59,6 @@ router.get('/export/excel', auth, async (req, res) => {
       { header: 'Birthdate', key: 'birthdate', width: 12 },
       { header: 'Address', key: 'address', width: 30 },
       { header: 'Contact Number', key: 'contactNumber', width: 15 },
-      { header: 'Email', key: 'email', width: 25 },
-      { header: 'Emergency Contact', key: 'emergencyContact', width: 20 },
-      { header: 'Emergency Number', key: 'emergencyNumber', width: 15 },
       { header: 'Required Forms', key: 'requiredForms', width: 20 },
       { header: 'Created Date', key: 'createdAt', width: 15 }
     ];
@@ -84,9 +81,6 @@ router.get('/export/excel', auth, async (req, res) => {
         birthdate: player.birthdate ? new Date(player.birthdate).toLocaleDateString() : '',
         address: player.address || '',
         contactNumber: player.contactNumber || '',
-        email: player.email || '',
-        emergencyContact: player.emergencyContact || '',
-        emergencyNumber: player.emergencyNumber || '',
         requiredForms: player.requiredForms || '',
         createdAt: player.createdAt ? new Date(player.createdAt).toLocaleDateString() : ''
       });

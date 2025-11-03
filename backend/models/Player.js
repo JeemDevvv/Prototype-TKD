@@ -5,7 +5,8 @@ const PlayerSchema = new mongoose.Schema({
   name: { type: String, required: true },
   beltRank: { type: String, required: true },
   birthdate: { type: Date },
-  gender: { type: String },
+  gender: { type: String }, // Keep for backward compatibility but will be replaced by team in UI
+  team: { type: String, required: true }, // Team assignment (EARIST, ERVHS, ARISE, TONDO, RECTO)
   photoUrl: { type: String },
   address: { type: String },
   contactNumber: { type: String },
