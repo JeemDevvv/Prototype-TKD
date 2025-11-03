@@ -285,7 +285,7 @@
 
   <script>
     // Allow overriding API base via localStorage for this page
-    window.setApiBase = function(url){ try { localStorage.setItem('API_BASE', url); alert('API base set. Reload the page.'); } catch(e) { alert('Failed to set API base'); } };
+    window.setApiBase = function(url){ try { localStorage.setItem('API_BASE', url); if (typeof showSuccess === 'function') { showSuccess('API base set. Reload the page.'); } else { alert('API base set. Reload the page.'); } } catch(e) { if (typeof showError === 'function') { showError('Failed to set API base'); } else { alert('Failed to set API base'); } } };
     // Example usage in console: setApiBase('http://localhost:4000/api')
   </script>
 

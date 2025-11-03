@@ -26,6 +26,91 @@ function getApiBase() {
 }
 const API_BASE = getApiBase();
 
+// Toast Notification System
+function createToastContainer() {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+  return container;
+}
+
+function showToast(message, type = 'success', duration = 4000) {
+  const container = createToastContainer();
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  
+  // Icons based on type
+  const icons = {
+    success: '<i class="fas fa-check"></i>',
+    error: '<i class="fas fa-times"></i>',
+    warning: '<i class="fas fa-exclamation-triangle"></i>',
+    info: '<i class="fas fa-info-circle"></i>'
+  };
+  
+  const icon = icons[type] || icons.success;
+  
+  toast.innerHTML = `
+    <div class="toast-icon">${icon}</div>
+    <div class="toast-content">
+      <p class="toast-message">${message}</p>
+    </div>
+    <button class="toast-close" aria-label="Close">&times;</button>
+    <div class="toast-progress" style="animation-duration: ${duration}ms;"></div>
+  `;
+  
+  container.appendChild(toast);
+  
+  // Trigger animation
+  setTimeout(() => {
+    toast.classList.add('show');
+  }, 10);
+  
+  // Close button handler
+  const closeBtn = toast.querySelector('.toast-close');
+  closeBtn.addEventListener('click', () => {
+    hideToast(toast);
+  });
+  
+  // Auto-hide after duration
+  if (duration > 0) {
+    setTimeout(() => {
+      hideToast(toast);
+    }, duration);
+  }
+  
+  return toast;
+}
+
+function hideToast(toast) {
+  toast.classList.add('hiding');
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.parentNode.removeChild(toast);
+    }
+  }, 300);
+}
+
+// Convenience functions
+function showSuccess(message, duration = 4000) {
+  return showToast(message, 'success', duration);
+}
+
+function showError(message, duration = 5000) {
+  return showToast(message, 'error', duration);
+}
+
+function showWarning(message, duration = 4000) {
+  return showToast(message, 'warning', duration);
+}
+
+function showInfo(message, duration = 4000) {
+  return showToast(message, 'info', duration);
+}
+
 // Get Socket.io server URL
 function getSocketUrl() {
   try {
@@ -1288,7 +1373,7 @@ document.addEventListener('DOMContentLoaded', () => {
           console.log('Response result:', result);
 
           if (response.ok) {
-            alert(successMessage);
+            showSuccess(successMessage);
             accountModal.classList.add('hidden');
             accountForm.reset();
             accountForm.setAttribute('data-mode', 'add');
@@ -1333,11 +1418,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 500);
           } else {
             console.error('Error response:', result);
-            alert(result.message || `Error ${mode === 'edit' ? 'updating' : 'creating'} account`);
+            showError(result.message || `Error ${mode === 'edit' ? 'updating' : 'creating'} account`);
           }
         } catch (error) {
           console.error(`Error ${mode === 'edit' ? 'updating' : 'creating'} account:`, error);
-          alert(`Error ${mode === 'edit' ? 'updating' : 'creating'} account. Please try again.`);
+          showError(`Error ${mode === 'edit' ? 'updating' : 'creating'} account. Please try again.`);
         }
       });
     }
@@ -1363,7 +1448,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Failed to load accounts - Status:', response.status);
             const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
             console.error('Error details:', errorData);
-            alert(`Failed to load accounts: ${errorData.message || 'Unknown error'}`);
+            showError(`Failed to load accounts: ${errorData.message || 'Unknown error'}`);
           }
       } catch (error) {
         console.error('Error loading accounts:', error);
@@ -1541,14 +1626,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // Show modal
             accountModal.classList.remove('hidden');
           } else {
-            alert('Account not found');
+            showError('Account not found');
           }
         } else {
-          alert('Failed to load account details');
+          showError('Failed to load account details');
         }
       } catch (error) {
         console.error('Error loading account:', error);
-        alert('Error loading account details');
+        showError('Error loading account details');
       }
     };
 
@@ -1574,14 +1659,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const result = await response.json();
 
         if (response.ok) {
-          alert('Account deleted successfully!');
+          showSuccess('Account deleted successfully!');
           loadAccounts(); // Refresh the list
         } else {
-          alert(result.message || 'Error deleting account');
+          showError(result.message || 'Error deleting account');
         }
       } catch (error) {
         console.error('Error deleting account:', error);
-        alert('Error deleting account. Please try again.');
+        showError('Error deleting account. Please try again.');
       }
     }
 
@@ -1916,11 +2001,11 @@ document.addEventListener('DOMContentLoaded', () => {
           const file = formData.get('photoFile');
           // Basic validation: type and size (<= 2MB)
           if (!/^image\//.test(file.type)) {
-            alert('Please select a valid image file.');
+            showWarning('Please select a valid image file.');
             return;
           }
           if (file.size > 2 * 1024 * 1024) {
-            alert('Image must be 2MB or smaller.');
+            showWarning('Image must be 2MB or smaller.');
             return;
           }
           const toDataUrl = (file) => new Promise((resolve, reject) => {
@@ -1967,6 +2052,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const action = editingPlayerId ? 'updated' : 'added';
             await logActivity(`${action} a player`, `Player: ${data.name}`);
             
+            // Show success message
+            showSuccess(`Player ${action} successfully!`);
+            
             // For Assistant Coach: Ensure team filter is set before reloading
             if (currentUserRole === 'assistant' && currentUserTeam) {
               currentTeamFilter = currentUserTeam;
@@ -1978,10 +2066,10 @@ document.addEventListener('DOMContentLoaded', () => {
             loadRecentHistory(); // Refresh recent history
           } else {
             const err = await res.json().catch(() => ({}));
-            alert('Failed to ' + (editingPlayerId ? 'edit' : 'add') + ' player. ' + (err.message || ''));
+            showError('Failed to ' + (editingPlayerId ? 'edit' : 'add') + ' player. ' + (err.message || ''));
           }
         } catch (networkErr) {
-          alert('Cannot reach server. Please start the backend or check your connection.');
+          showError('Cannot reach server. Please start the backend or check your connection.');
         }
       });
       // Live photo preview
@@ -2318,7 +2406,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Handle authentication errors specifically
                 if (response.status === 401) {
                   errorMessage = 'Your session has expired. Please log in again.';
-                  alert(errorMessage);
+                  showWarning(errorMessage);
                   // Show login modal instead of redirecting
                   if (loginModal) {
                     loginModal.classList.remove('hidden');
@@ -2333,12 +2421,12 @@ document.addEventListener('DOMContentLoaded', () => {
               }
               
               if (response.status !== 401) {
-                alert(`Export failed: ${errorMessage}`);
+                showError(`Export failed: ${errorMessage}`);
               }
             }
           } catch (error) {
             console.error('Export error:', error);
-            alert('Export failed. Please try again.');
+            showError('Export failed. Please try again.');
           } finally {
             exportExcelBtn.innerHTML = '<i class="fas fa-file-excel"></i> Export Excel';
             exportExcelBtn.disabled = false;
@@ -2367,13 +2455,13 @@ document.addEventListener('DOMContentLoaded', () => {
           // Validate file type
           const allowedTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
           if (!allowedTypes.includes(file.type)) {
-            alert('Please select a valid Excel file (.xlsx or .xls)');
+            showWarning('Please select a valid Excel file (.xlsx or .xls)');
             return;
           }
 
           // Validate file size (max 10MB)
           if (file.size > 10 * 1024 * 1024) {
-            alert('File size must be less than 10MB');
+            showWarning('File size must be less than 10MB');
             return;
           }
 
@@ -2392,7 +2480,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (!sessionCheck.ok) {
               console.log('Session invalid, aborting import');
-              alert('Your session has expired. Please log in again.');
+              showWarning('Your session has expired. Please log in again.');
               // Show login modal instead of redirecting
               if (loginModal) {
                 loginModal.classList.remove('hidden');
@@ -2427,7 +2515,7 @@ document.addEventListener('DOMContentLoaded', () => {
               if (errors > 0) message += `, ${errors} errors`;
               message += `.`;
               
-              alert(message);
+              showInfo(message);
               
               // Log activity
               await logActivity('imported players data from Excel', `Imported: ${imported}, Updated: ${updated}, Errors: ${errors}`);
@@ -2447,7 +2535,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Handle authentication errors specifically
                 if (response.status === 401) {
                   errorMessage = 'Your session has expired. Please log in again.';
-                  alert(errorMessage);
+                  showWarning(errorMessage);
                   // Show login modal instead of redirecting
                   if (loginModal) {
                     loginModal.classList.remove('hidden');
@@ -2462,12 +2550,12 @@ document.addEventListener('DOMContentLoaded', () => {
               }
               
               if (response.status !== 401) {
-                alert(`Import failed: ${errorMessage}`);
+                showError(`Import failed: ${errorMessage}`);
               }
             }
           } catch (error) {
             console.error('Import error:', error);
-            alert('Import failed. Please try again.');
+            showError('Import failed. Please try again.');
           } finally {
             importExcelBtn.innerHTML = '<i class="fas fa-file-import"></i> Import Excel';
             importExcelBtn.disabled = false;
@@ -2504,7 +2592,7 @@ document.addEventListener('DOMContentLoaded', () => {
             editingPlayerId = id;
             playerModal.classList.remove('hidden');
           } else {
-            alert('Failed to fetch player data.');
+            showError('Failed to fetch player data.');
           }
         });
       });
@@ -2517,10 +2605,11 @@ document.addEventListener('DOMContentLoaded', () => {
               credentials: 'include'
             });
             if (res.ok) {
+              showSuccess('Player deleted successfully!');
               loadPlayers();
             } else {
               const err = await res.json();
-              alert('Failed to delete player. ' + (err.message || ''));
+              showError('Failed to delete player. ' + (err.message || ''));
             }
           }
         });
@@ -2802,7 +2891,7 @@ document.addEventListener('keydown', (e) => {
       const nccRef = formData.get('nccRef');
       
       if (!nccRef) {
-        alert('Please enter an NCC reference number');
+        showWarning('Please enter an NCC reference number');
         return;
       }
 
