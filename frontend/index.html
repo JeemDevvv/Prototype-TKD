@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARISE TKD</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+ 
+  <script src="https://kit.fontawesome.com/067ecd9ed6.js" crossorigin="anonymous"></script>
+  <header class="pta-navbar">
+    <div class="pta-navbar-content">
+      <div class="pta-navbar-left">
+        <img src="public/logo.jpg" alt="Arise Logo" class="pta-logo">
+      </div>
+      <nav class="pta-navbar-right" id="ptaNavMenu">
+        <a href="#" class="pta-nav-link active">Home</a>
+        <a href="pages/achievements.html" class="pta-nav-link">Achievements</a>
+        <a href="pages/about.html" class="pta-nav-link">About Us</a>
+        <div class="pta-navbar-buttons">
+          <a href="#" class="btn btn-nav js-open-stats">Check Stats</a>
+          <a href="#" class="btn btn-nav btn-login js-open-login">Login</a>
+        </div>
+      </nav>
+      <button class="pta-navbar-toggle" id="ptaNavbarToggle" aria-label="Toggle navigation">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Client-side Sidebar -->
+  <aside class="client-sidebar" id="clientSidebar">
+    <div class="sidebar-header">
+      <img src="public/arise.png" alt="ARISE Logo" class="sidebar-logo">
+      <button class="sidebar-close" id="sidebarClose" aria-label="Close sidebar">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="sidebar-link active">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+      </a>
+      <a href="pages/achievements.html" class="sidebar-link">
+        <i class="fas fa-trophy"></i>
+        <span>Achievements</span>
+      </a>
+      <a href="pages/about.html" class="sidebar-link">
+        <i class="fas fa-info-circle"></i>
+        <span>About Us</span>
+      </a>
+    </nav>
+    <div class="sidebar-actions">
+      <a href="#" class="btn btn-sidebar js-open-stats">
+        <i class="fas fa-chart-bar"></i>
+        <span>Check Stats</span>
+      </a>
+      <a href="#" class="btn btn-sidebar btn-login js-open-login">
+        <i class="fas fa-sign-in-alt"></i>
+        <span>Login</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <section class="pta-hero" id="ptaHero">
+    <div class="pta-hero-overlay">
+      <div class="pta-hero-subtitle">EARIST TAEKWONDO TEAM</div>
+      <h1>ARISE TAEKWONDO TEAM</h1>
+      <div class="pta-hero-recognized">Recognized By:</div>
+      <div class="pta-hero-sub">Philippine Taekwondo Association</div>
+    </div>
+  </section>
+  <script>
+    // Carousel images
+    const heroImages = [
+      'public/group.png',
+      'public/group1.jpg',
+      'public/group2.jpg',
+      'public/group3.jpg',
+      'public/group4.jpg'
+    ];
+    let heroIndex = 0;
+    const heroSection = document.getElementById('ptaHero');
+    function setHeroBg(idx, fade = false) {
+      if (fade) {
+        heroSection.classList.add('pta-hero-fade');
+        setTimeout(() => {
+          heroSection.style.setProperty('--hero-bg', `url('${heroImages[idx]}')`);
+          heroSection.classList.remove('pta-hero-fade');
+        }, 400); // fade out, then change, then fade in
+      } else {
+        heroSection.style.setProperty('--hero-bg', `url('${heroImages[idx]}')`);
+      }
+    }
+    setHeroBg(heroIndex);
+    setInterval(() => {
+      heroIndex = (heroIndex + 1) % heroImages.length;
+      setHeroBg(heroIndex, true);
+    }, 4000);
+  </script>
+
+  <!-- Trusted Logos Section -->
+  <section class="trusted-logos-section">
+    <div class="trusted-logos-title">Our Team:</div>
+    <div class="trusted-logos-row">
+      <img src="public/pta.jpg" alt="Pfizer" class="trusted-logo">
+      <img src="public/earist.png" alt="Wforce" class="trusted-logo">
+      <img src="public/arise.png" alt="Kforce" class="trusted-logo">
+      <img src="public/tondo.jpg" alt="Siemens" class="trusted-logo">
+      <img src="public/chrms.jpg" alt="Siemens" class="trusted-logo">
+    </div>
+  </section>
+
+  <!-- Coaches Section -->
+  <section class="pta-events" id="coaches">
+    <h2>COACHES OF ARISE</h2>
+    <div class="pta-event-cards">
+      <div class="pta-event-card">
+        <img src="public/rene.jpg" alt="Coach 1" class="pta-event-img">
+        <div class="pta-event-info">
+          <div class="pta-event-title">Coach Rene</div>
+          <div class="pta-event-date">Head Coach</div>
+          <img src="public/uniform.png" alt="Taekwondo Uniform" class="pta-coach-icon" style="height: 44px; margin-top: 1.1rem;" />
+        </div>
+      </div>
+      <div class="pta-event-card">
+        <img src="public/aldrin.jpg" alt="Coach 2" class="pta-event-img">
+        <div class="pta-event-info">
+          <div class="pta-event-title">Coach Aldrin</div>
+          <div class="pta-event-date">Kyorugi Coach</div>
+          <img src="public/uniform.png" alt="Taekwondo Uniform" class="pta-coach-icon" style="height: 44px; margin-top: 1.1rem;" />
+        </div>
+      </div>
+      <div class="pta-event-card">
+        <img src="public/vince.jpg" alt="Coach 3" class="pta-event-img">
+        <div class="pta-event-info">
+          <div class="pta-event-title">Coach Vince</div>
+          <div class="pta-event-date">Poomsae Coach</div>
+          <img src="public/uniform.png" alt="Taekwondo Uniform" class="pta-coach-icon" style="height: 44px; margin-top: 1.1rem;" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="pta-footer">
+    <div class="pta-footer-content">
+      <div class="pta-footer-col pta-footer-logo-col">
+        <img src="public/arise.png" alt="PTA Logo" class="pta-footer-logo">
+        <div class="pta-footer-address">
+          Eulogio 'Amang' Rodriguez Institute of Science and Technology<br>
+          Nagtahan, Manila, Philippines
+        </div>
+        <div class="pta-footer-contact">
+          <div><i class="fa-solid fa-phone"></i> 0977 384 5870</div>
+          <div><i class="fa-regular fa-envelope"></i>
+            arise.tkd@gmail.com</div>
+        </div>
+      </div>
+      <div class="pta-footer-col">
+        <div class="pta-footer-title">Quick Links</div>
+        <a href="#" class="pta-footer-link">Home</a>
+        <a href="pages/achievements.html" class="pta-footer-link">Achievements</a>
+        <a href="pages/about.html" class="pta-footer-link">About Us</a>
+      </div>
+      <div class="pta-footer-col">
+        <div class="pta-footer-title">Follow us</div>
+        <div class="pta-footer-socials">
+          <a href="#website-arise.tkd.ph" class="pta-footer-social" target="_blank"><i class="fa-solid fa-globe"></i></a>
+          <a href="https://www.facebook.com/ARISEtaekwondophil" target="_blank" class="pta-footer-social"><i class="fa-brands fa-square-facebook"></i></a>
+          <a href="https://www.facebook.com/messages/t/348206088378238" target="_blank" class="pta-footer-social"><i class="fa-brands fa-facebook-messenger"></i></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <link rel="icon" href="public/logo.jpg">
+  <script src="js/main.js"></script>
+  <!-- Reusable Check Stats Modal -->
+  <div class="modal hidden" id="statsModal">
+    <div class="check-stats-container" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
+      <button id="closeStatsModal" class="stats-close" aria-label="Close">X</button>
+      <h2 id="statsTitle">Check My Stats</h2>
+      <form id="searchForm">
+        <input type="text" name="nccRef" placeholder="Enter NCC Reference Number" required>
+        <button type="submit" class="btn">Search</button>
+      </form>
+      <div id="searchResult" style="text-align: center;"></div>
+    </div>
+  </div>
+  <!-- Reusable Login Modal -->
+  <div class="modal hidden" id="loginModal">
+    <div class="check-stats-container login-card" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+      <button id="closeLoginModal" class="stats-close" aria-label="Close">X</button>
+      <h2 id="loginTitle">Admin Login</h2>
+      <form id="loginForm" class="login-form">
+        <div class="field-group">
+          <label class="field-label">Role</label>
+          <div class="select-wrap">
+            <select name="role" required aria-label="Select role">
+              <option value="admin">Admin</option>
+              <option value="coach">Coach</option>
+              <option value="assistant">Assistant Coach</option>
+            </select>
+            <span class="select-caret" aria-hidden="true">▾</span>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="loginUsername">Username</label>
+          <div class="input-wrap">
+            <span class="input-icon" aria-hidden="true"><i class="fa-regular fa-user"></i></span>
+            <input id="loginUsername" type="text" name="username" placeholder="Username" required autocomplete="username">
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="loginPassword">Password</label>
+          <div class="input-wrap">
+            <span class="input-icon" aria-hidden="true"><i class="fa-solid fa-lock"></i></span>
+            <input id="loginPassword" type="password" name="password" placeholder="Password" required autocomplete="current-password">
+            <button type="button" class="toggle-password" aria-label="Show password"><i class="fa-regular fa-eye"></i></button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-login-primary">
+          <span class="btn-label">Login</span>
+          <span class="btn-spinner" aria-hidden="true"></span>
+        </button>
+      </form>
+      <div id="loginError" class="error-message" role="alert"></div>
+    </div>
+  </div>
+</body>
+</html>
+
