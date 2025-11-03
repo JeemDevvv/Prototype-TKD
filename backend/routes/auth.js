@@ -135,7 +135,7 @@ router.post('/login', async (req, res) => {
       }
       
       console.log('Session saved successfully, sending response');
-      res.json({ message: 'Login successful', role: resolvedRole });
+    res.json({ message: 'Login successful', role: resolvedRole });
     });
   } catch (e) {
     res.status(500).json({ message: 'Server error' });

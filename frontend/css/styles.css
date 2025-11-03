@@ -4875,7 +4875,7 @@ body:not(.admin-dashboard) .pta-navbar-right .pta-nav-link {
   padding: 0.5rem 1rem;
   border-radius: 6px;
   transition: all 0.3s ease;
-}
+  }
 
 body:not(.admin-dashboard) .pta-navbar-right .pta-nav-link:hover,
 body:not(.admin-dashboard) .pta-navbar-right .pta-nav-link.active {
@@ -4950,7 +4950,7 @@ body:not(.admin-dashboard) .pta-navbar-buttons {
 .sidebar-close:hover {
   background: rgba(255, 255, 255, 0.1);
   color: #9C3328;
-}
+  }
 
 /* Sidebar Navigation */
 .sidebar-nav {
@@ -5704,7 +5704,7 @@ body:not(.admin-dashboard) .pta-navbar-toggle {
   font-size: 1.25rem;
   font-weight: 600;
   color: #1f2937;
-}
+  }
 
 .notification-message {
   margin: 0;
@@ -5756,7 +5756,7 @@ body:not(.admin-dashboard) .pta-navbar-toggle {
 
 .notification.slide-in {
   animation: slideInDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
+  }
 
 .notification.slide-out {
   animation: slideOutUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);

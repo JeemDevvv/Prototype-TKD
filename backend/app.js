@@ -210,3 +210,4 @@ const PORT = process.env.PORT || 4000;
 // Listen on all interfaces (0.0.0.0) to accept connections from both localhost and 127.0.0.1
 // Only use server.listen() since app is already attached to the server
 server.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`)); 
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`)); 
