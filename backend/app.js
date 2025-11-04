@@ -181,16 +181,66 @@ mongoose.connect(process.env.MONGODB_URI, {
 })
   .catch(err => console.error('MongoDB connection error:', err));
 
-// Routes
+// API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/player', require('./routes/player'));
 app.use('/api/stats', require('./routes/stats'));
 app.use('/api/accounts', require('./routes/accounts'));
 app.use('/api/activity', require('./routes/activityLog'));
 
-// Default route
+// ------------------------------
+// Frontend static assets + clean URLs
+// ------------------------------
+const FRONTEND_ROOT = path.join(__dirname, '..', 'frontend');
+const FRONTEND_PAGES = path.join(FRONTEND_ROOT, 'pages');
+
+// Serve all static assets (css, js, images, public, etc.)
+app.use(express.static(FRONTEND_ROOT, {
+  setHeaders: (res) => {
+    // Make sure cookies can be included by the browser when needed
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+}));
+
+// Clean URL routes mapping to HTML files
 app.get('/', (req, res) => {
-  res.send('Arise Taekwonders API running');
+  res.sendFile(path.join(FRONTEND_PAGES, 'index.html'));
+});
+
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(FRONTEND_PAGES, 'dashboard.html'));
+});
+
+app.get('/achievements', (req, res) => {
+  res.sendFile(path.join(FRONTEND_PAGES, 'achievements.html'));
+});
+
+app.get('/players', (req, res) => {
+  res.sendFile(path.join(FRONTEND_PAGES, 'player-profile.html'));
+});
+
+app.get('/accounts', (req, res) => {
+  res.sendFile(path.join(FRONTEND_PAGES, 'dashboard.html'));
+});
+
+app.get('/settings', (req, res) => {
+  res.sendFile(path.join(FRONTEND_PAGES, 'dashboard.html'));
+});
+
+// Support legacy .html links (optional): redirect to clean URLs
+app.get(['/index.html','/dashboard.html','/achievements.html'], (req, res) => {
+  const map = {
+    '/index.html': '/',
+    '/dashboard.html': '/dashboard',
+    '/achievements.html': '/achievements'
+  };
+  const to = map[req.path] || '/';
+  res.redirect(301, to);
+});
+
+// Catch-all: redirect unknown routes to home to avoid 404 on refresh/share
+app.get('*', (req, res) => {
+  res.redirect(302, '/');
 });
 
 // Health check endpoint for deployment monitoring
