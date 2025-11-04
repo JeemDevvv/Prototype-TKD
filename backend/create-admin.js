@@ -35,6 +35,8 @@ createAdmin().catch(err => {
   console.error(err);
   process.exit(1);
 }); 
+
+
 async function createCoach(username = 'coach', password = 'coach') {
   await mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,

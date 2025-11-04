@@ -18,66 +18,75 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
-      
+      // Allow all localhost and 127.0.0.1 origins
       if (!origin || /^http:\/\/(127\.0\.0\.1|localhost|0\.0\.0\.0)(:\d+)?$/.test(origin)) {
         callback(null, true);
       } else if (/^https:\/\/.*\.(onrender|railway|vercel|netlify)\.(com|app)$/.test(origin)) {
         callback(null, true);
       } else {
-        callback(null, true); 
+        callback(null, true); // Allow all for now
       }
     },
     credentials: true
   }
 });
 
+// Make io available to routes
 app.set('io', io);
 
 
 app.use(cors({
   origin: (origin, callback) => {
     console.log('CORS origin check:', origin);
-   
+    
+    // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) {
       console.log('No origin - allowing');
       return callback(null, true);
     }
     
+    // Allow localhost for development (any port, including Live Server ports like 5500)
     const allowedLocal = /^http:\/\/(127\.0\.0\.1|localhost|0\.0\.0\.0)(:\d+)?$/;
     if (allowedLocal.test(origin)) {
       console.log('Localhost origin - allowing:', origin);
       return callback(null, true);
     }
     
+    // Also allow common development server ports explicitly
     if (origin && (origin.includes('127.0.0.1') || origin.includes('localhost'))) {
       console.log('Local development origin detected - allowing:', origin);
       return callback(null, true);
     }
     
+    // Allow ALL Render domains for production
     const allowedRender = /^https:\/\/.*\.onrender\.com$/;
     if (allowedRender.test(origin)) {
       console.log('Render origin - allowing:', origin);
       return callback(null, true);
     }
     
+    // Allow Railway domains for production
     const allowedRailway = /^https:\/\/.*\.railway\.app$/;
     if (allowedRailway.test(origin)) {
       console.log('Railway origin - allowing:', origin);
       return callback(null, true);
     }
     
+    // Allow Vercel domains for production
     const allowedVercel = /^https:\/\/.*\.vercel\.app$/;
     if (allowedVercel.test(origin)) {
       console.log('Vercel origin - allowing:', origin);
       return callback(null, true);
     }
     
+    // Allow Netlify domains for production
     const allowedNetlify = /^https:\/\/.*\.netlify\.app$/;
     if (allowedNetlify.test(origin)) {
       console.log('Netlify origin - allowing:', origin);
       return callback(null, true);
     }
     
+    // For development, allow all origins
     if (process.env.NODE_ENV !== 'production') {
       console.log('Development mode - allowing all origins');
       return callback(null, true);
@@ -92,6 +101,7 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 
+// Handle preflight OPTIONS requests
 app.options('*', (req, res) => {
   console.log('OPTIONS preflight request from:', req.headers.origin);
   res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
@@ -101,12 +111,16 @@ app.options('*', (req, res) => {
   res.sendStatus(200);
 });
 
+// Security middleware
 app.use(securityLogger);
 app.use(generalLimiter);
 
+// Middleware
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 
+// Session middleware (after CORS)
+// Trust proxy for production (Render uses proxies)
 app.set('trust proxy', 1);
 
 app.use(session({
@@ -115,26 +129,29 @@ app.use(session({
   saveUninitialized: false,
   store: MongoStore.create({
     mongoUrl: process.env.MONGODB_URI,
-    touchAfter: 24 * 3600,
-    ttl: 24 * 60 * 60, 
+    touchAfter: 24 * 3600, // lazy session update
+    ttl: 24 * 60 * 60, // 24 hours in seconds
     autoRemove: 'native'
   }),
   cookie: {
-    
+    // For production HTTPS (Render): use 'none' and 'true' for cross-domain cookies
+    // For local development HTTP: use 'lax' and 'false'
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    secure: process.env.NODE_ENV === 'production', 
-    maxAge: 24 * 60 * 60 * 1000,
+    secure: process.env.NODE_ENV === 'production', // true for HTTPS in production
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
     httpOnly: true,
-    path: '/', 
-    domain: undefined
+    path: '/', // Ensure cookie is available for all paths
+    domain: undefined // Let browser set domain automatically
   }
 }));
 
+// MongoDB connection
 if (!process.env.MONGODB_URI) {
   console.error('Missing MONGODB_URI in backend/.env. Example: mongodb://127.0.0.1:27017/prototype-tkd');
   process.exit(1);
 }
 
+// Import models for admin creation
 const Admin = require('./models/Admin');
 const bcrypt = require('bcrypt');
 
@@ -144,6 +161,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 }).then(async () => {
   console.log('MongoDB connected');
   
+  // Create default admin if none exists
   try {
     const adminCount = await Admin.countDocuments();
     if (adminCount === 0) {
@@ -163,22 +181,32 @@ mongoose.connect(process.env.MONGODB_URI, {
 })
   .catch(err => console.error('MongoDB connection error:', err));
 
+// API Routes (must come before static file serving)
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/player', require('./routes/player'));
 app.use('/api/stats', require('./routes/stats'));
 app.use('/api/accounts', require('./routes/accounts'));
 app.use('/api/activity', require('./routes/activityLog'));
 
-const FRONTEND_ROOT = path.join(__dirname, '..', 'frontend');
-const FRONTEND_PAGES = path.join(FRONTEND_ROOT, 'pages');
+// Health check endpoint for deployment monitoring
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
 
-app.use(express.static(FRONTEND_ROOT, {
-  setHeaders: (res) => {
+// Static file serving for CSS, JS, and public assets
+const FRONTEND_DIR = path.join(__dirname, '..', 'frontend');
+app.use('/css', express.static(path.join(FRONTEND_DIR, 'css')));
+app.use('/js', express.static(path.join(FRONTEND_DIR, 'js')));
+app.use('/public', express.static(path.join(FRONTEND_DIR, 'public')));
 
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
-}));
+// Frontend pages directory
+const FRONTEND_PAGES = path.join(FRONTEND_DIR, 'pages');
 
+// Clean URL routes for main pages
 app.get('/', (req, res) => {
   res.sendFile(path.join(FRONTEND_PAGES, 'index.html'));
 });
@@ -203,28 +231,38 @@ app.get('/settings', (req, res) => {
   res.sendFile(path.join(FRONTEND_PAGES, 'dashboard.html'));
 });
 
-app.get(['/index.html','/dashboard.html','/achievements.html'], (req, res) => {
+app.get('/about', (req, res) => {
+  res.sendFile(path.join(FRONTEND_PAGES, 'about.html'));
+});
+
+// Redirect .html extensions to clean URLs
+app.get(['/index.html', '/dashboard.html', '/achievements.html', '/player-profile.html', '/about.html'], (req, res) => {
   const map = {
     '/index.html': '/',
     '/dashboard.html': '/dashboard',
-    '/achievements.html': '/achievements'
+    '/achievements.html': '/achievements',
+    '/player-profile.html': '/players',
+    '/about.html': '/about'
   };
-  const to = map[req.path] || '/';
-  res.redirect(301, to);
+  const redirectTo = map[req.path] || '/';
+  res.redirect(301, redirectTo);
 });
 
+// Catch-all route: redirect unknown routes to home page
 app.get('*', (req, res) => {
+  // Don't redirect API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  // Don't redirect static assets
+  if (req.path.startsWith('/css/') || req.path.startsWith('/js/') || req.path.startsWith('/public/')) {
+    return res.status(404).send('File not found');
+  }
+  // Redirect everything else to home
   res.redirect(302, '/');
 });
 
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
-
+// Socket.io connection handling
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
   
@@ -234,4 +272,6 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 4000;
+// Listen on all interfaces (0.0.0.0) to accept connections from both localhost and 127.0.0.1
+// Only use server.listen() since app is already attached to the server
 server.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`)); 

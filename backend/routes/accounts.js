@@ -5,10 +5,12 @@ const Coach = require('../models/Coach');
 const AssistantCoach = require('../models/AssistantCoach');
 const bcrypt = require('bcrypt');
 
+// Helper function to get io from request
 function getIO(req) {
   return req.app.get('io');
 }
 
+// Get all accounts
 router.get('/', async (req, res) => {
   try {
     console.log('=== GET ACCOUNTS REQUEST ===');
@@ -38,6 +40,7 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Create new account
 router.post('/', async (req, res) => {
   try {
     const { username, password, role, name, email, team } = req.body;
@@ -50,6 +53,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'Username, password, and role are required' });
     }
 
+    // Check if username already exists
     const existingAdmin = await Admin.findOne({ username });
     const existingCoach = await Coach.findOne({ username });
     const existingAssistant = await AssistantCoach.findOne({ username });
@@ -58,6 +62,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'Username already exists' });
     }
 
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     let newAccount;
@@ -70,7 +75,7 @@ router.post('/', async (req, res) => {
         password: hashedPassword, 
         name: name || username,
         email: email || null,
-        team: team || null
+        team: team || null // Coach can have team assigned or null for all teams access
       });
     } else if (role === 'assistant') {
       if (!team) {
@@ -81,7 +86,7 @@ router.post('/', async (req, res) => {
         password: hashedPassword, 
         name: name || username,
         email: email || null,
-        team: team
+        team: team // Assistant Coach must have a team assigned
       });
     } else {
       return res.status(400).json({ message: 'Invalid role' });
@@ -98,6 +103,7 @@ router.post('/', async (req, res) => {
       team: newAccount.team || null
     };
 
+    // Emit real-time event
     const io = getIO(req);
     if (io) {
       io.emit('account:created', accountData);
@@ -112,6 +118,7 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Update account
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -127,6 +134,7 @@ router.put('/:id', async (req, res) => {
     console.log('Has password:', !!password);
     console.log('===============================');
 
+    // First, find the account in any of the three models to get its current role
     let account = await Admin.findById(id);
     let currentRole = 'admin';
     let currentModel = Admin;
@@ -154,11 +162,13 @@ router.put('/:id', async (req, res) => {
     console.log('Account found in model:', currentRole);
     console.log('Current account data:', account);
 
+    // Check if role is being changed
     const roleChanged = role && role !== currentRole;
     
     if (roleChanged) {
       console.log('Role change detected:', currentRole, '->', role);
       
+      // Validate new role
       let NewAccountModel;
       if (role === 'admin') {
         NewAccountModel = Admin;
@@ -173,32 +183,39 @@ router.put('/:id', async (req, res) => {
         return res.status(400).json({ message: 'Invalid role' });
       }
 
+      // Prepare account data for the new model
       const accountData = {
         username: username || account.username,
-        password: account.password,
+        password: account.password, // Keep current password initially
         name: name || account.name || account.username,
         email: email !== undefined ? email : (account.email || null),
         team: role === 'admin' ? undefined : (team !== undefined ? team : (account.team || null))
       };
 
+      // Update password if provided
       if (password && password.trim() !== '') {
         accountData.password = await bcrypt.hash(password, 10);
       }
 
+      // Remove undefined fields
       Object.keys(accountData).forEach(key => {
         if (accountData[key] === undefined) delete accountData[key];
       });
 
+      // Create account in new model
       const newAccount = new NewAccountModel(accountData);
       await newAccount.save();
 
       console.log('New account created in', role, 'model with ID:', newAccount._id);
 
+      // Delete old account
       await currentModel.findByIdAndDelete(id);
       console.log('Old account deleted from', currentRole, 'model');
 
+      // Update reference to new account
       account = newAccount;
     } else {
+      // Role not changed, update in place
       let AccountModel;
       if (role === 'admin') {
         AccountModel = Admin;
@@ -212,10 +229,12 @@ router.put('/:id', async (req, res) => {
 
       if (username) account.username = username;
       
+      // Only update name, email, and team for roles that support them
       if (role !== 'admin') {
         if (name) account.name = name;
         if (email !== undefined) account.email = email;
         if (team !== undefined) {
+          // For Assistant Coach, team is required
           if (role === 'assistant' && !team) {
             return res.status(400).json({ message: 'Team is required for Assistant Coach' });
           }
@@ -225,6 +244,7 @@ router.put('/:id', async (req, res) => {
         console.log('Admin account - skipping name, email, and team updates (not supported)');
       }
       
+      // Only update password if provided
       if (password && password.trim() !== '') {
         const hashedPassword = await bcrypt.hash(password, 10);
         account.password = hashedPassword;
@@ -242,6 +262,7 @@ router.put('/:id', async (req, res) => {
       team: account.team || null
     };
 
+    // Emit real-time event
     const io = getIO(req);
     if (io) {
       io.emit('account:updated', accountData);
@@ -257,6 +278,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+// Delete account
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -279,6 +301,7 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Account not found' });
     }
 
+    // Emit real-time event
     const io = getIO(req);
     if (io) {
       io.emit('account:deleted', { id, role });

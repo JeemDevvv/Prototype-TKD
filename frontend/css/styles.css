@@ -3848,13 +3848,7 @@ form button:hover, form button:focus {
   align-items: center;
   justify-content: center;
   z-index: 3000;
-  transition: background 0.3s ease-out;
-  opacity: 1;
-}
-
-.modal.closing {
-  background: rgba(0,0,0,0);
-  transition: background 0.3s ease-in;
+  transition: background 0.2s;
 }
 
 .modal #playerForm {
@@ -3872,6 +3866,9 @@ form button:hover, form button:focus {
   border-radius: 1.2rem;
   box-shadow: 0 8px 40px rgba(0,0,0,0.18);
   min-width: 420px;
+  transform: scale(0.96) translateY(12px);
+  opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), opacity 0.25s cubic-bezier(0.4,0,0.2,1);
   position: relative;
 }
 
@@ -3987,22 +3984,8 @@ form button:hover, form button:focus {
 }
 
 .modal:not(.hidden) .check-stats-container {
-  animation: slideUp 0.8s ease-out;
-}
-
-.modal.closing .check-stats-container {
-  animation: slideOutUp 0.4s ease-in forwards;
-}
-
-@keyframes slideOutUp {
-  from {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateY(-30px);
-    opacity: 0;
-  }
+  transform: scale(1) translateY(0);
+  opacity: 1;
 }
 
 .stats-close {

@@ -6,11 +6,13 @@ module.exports = function (req, res, next) {
   console.log('User ID in session:', req.session?.userId);
   console.log('User role:', req.session?.role);
   
+  // Development bypass when explicitly enabled
   if (process.env.ALLOW_INSECURE === 'true' || process.env.NODE_ENV === 'development') {
     console.log('Development bypass enabled');
     return next();
   }
   
+  // Check if session exists and has required data
   if (!req.session || !req.session.userId) {
     console.log('No valid session found');
     return res.status(401).json({ 
@@ -19,8 +21,9 @@ module.exports = function (req, res, next) {
     });
   }
   
+  // Check session expiration (24 hours)
   const sessionAge = Date.now() - (req.session.createdAt || 0);
-  const maxAge = 24 * 60 * 60 * 1000;
+  const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
   
   if (sessionAge > maxAge) {
     console.log('Session expired');
@@ -31,6 +34,7 @@ module.exports = function (req, res, next) {
     });
   }
   
+  // Check if user is active (not deleted/disabled)
   if (req.session.userStatus && req.session.userStatus !== 'active') {
     console.log('User account is not active');
     return res.status(403).json({ 
@@ -39,6 +43,7 @@ module.exports = function (req, res, next) {
     });
   }
   
+  // Log successful authentication
   console.log('User authenticated successfully:', {
     userId: req.session.userId,
     role: req.session.role,

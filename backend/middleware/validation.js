@@ -1,15 +1,18 @@
+// Input validation and sanitization middleware
 const validator = require('validator');
 
+// Sanitize input data
 const sanitizeInput = (req, res, next) => {
   const sanitizeObject = (obj) => {
     if (typeof obj !== 'object' || obj === null) return obj;
     
     for (let key in obj) {
       if (typeof obj[key] === 'string') {
+        // Remove potentially dangerous characters
         obj[key] = obj[key]
-          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-          .replace(/javascript:/gi, '')
-          .replace(/on\w+\s*=/gi, '')
+          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
+          .replace(/javascript:/gi, '') // Remove javascript: protocols
+          .replace(/on\w+\s*=/gi, '') // Remove event handlers
           .trim();
       } else if (typeof obj[key] === 'object') {
         sanitizeObject(obj[key]);
@@ -31,6 +34,7 @@ const sanitizeInput = (req, res, next) => {
   next();
 };
 
+// Validate email format
 const validateEmail = (req, res, next) => {
   const { email } = req.body;
   if (email && !validator.isEmail(email)) {
@@ -42,6 +46,7 @@ const validateEmail = (req, res, next) => {
   next();
 };
 
+// Validate password strength
 const validatePassword = (req, res, next) => {
   const { password } = req.body;
   if (password) {
@@ -61,6 +66,7 @@ const validatePassword = (req, res, next) => {
   next();
 };
 
+// Validate required fields
 const validateRequired = (fields) => {
   return (req, res, next) => {
     const missing = fields.filter(field => !req.body[field]);
@@ -74,6 +80,7 @@ const validateRequired = (fields) => {
   };
 };
 
+// Validate MongoDB ObjectId
 const validateObjectId = (field) => {
   return (req, res, next) => {
     const id = req.params[field] || req.body[field];
