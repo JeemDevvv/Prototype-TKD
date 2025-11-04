@@ -1,6 +1,7 @@
 services:
+  # Backend service - serves API and can also serve frontend with clean URLs
   - type: web
-    name: tkd-backend
+    name: prototype-tkd-backend
     env: node
     plan: free
     buildCommand: npm install
@@ -16,18 +17,60 @@ services:
         generateValue: true
     healthCheckPath: /api/health
 
+  # Frontend static site - serves static files with clean URL redirects
   - type: web
-    name: tkd-frontend
+    name: arisetaekwondo
     env: static
+    plan: free
     buildCommand: echo "Frontend files ready"
     staticPublishPath: ./frontend
     routes:
+      # Proxy API calls to backend
       - type: rewrite
         source: /api/*
-        destination: https://tkd-backend.onrender.com/api/*
+        destination: https://prototype-tkd-backend.onrender.com/api/*
+      # Clean URL routes - rewrite to actual file paths
+      - type: rewrite
+        source: /
+        destination: /pages/index.html
+      - type: rewrite
+        source: /dashboard
+        destination: /pages/dashboard.html
+      - type: rewrite
+        source: /achievements
+        destination: /pages/achievements.html
+      - type: rewrite
+        source: /about
+        destination: /pages/about.html
+      - type: rewrite
+        source: /players
+        destination: /pages/player-profile.html
+      - type: rewrite
+        source: /accounts
+        destination: /pages/dashboard.html
+      - type: rewrite
+        source: /settings
+        destination: /pages/dashboard.html
+      # Redirect .html extensions to clean URLs
+      - type: rewrite
+        source: /index.html
+        destination: /pages/index.html
+      - type: rewrite
+        source: /dashboard.html
+        destination: /pages/dashboard.html
+      - type: rewrite
+        source: /achievements.html
+        destination: /pages/achievements.html
+      - type: rewrite
+        source: /about.html
+        destination: /pages/about.html
+      - type: rewrite
+        source: /player-profile.html
+        destination: /pages/player-profile.html
+      # Fallback for client-side routing (for dashboard sections like /accounts, /settings)
       - type: rewrite
         source: /*
-        destination: /index.html
+        destination: /pages/index.html
 
 databases:
   - name: tkd-database

@@ -1,0 +1,14 @@
+# Redirect rules for Render static site
+# Redirect .html extensions to clean URLs
+/index.html / 301
+/dashboard.html /dashboard 301
+/achievements.html /achievements 301
+/about.html /about 301
+/player-profile.html /players 301
+
+# Proxy API calls to backend
+/api/* https://prototype-tkd-backend.onrender.com/api/:splat 200
+
+# Fallback for client-side routing (SPA fallback)
+/* /index.html 200
+
