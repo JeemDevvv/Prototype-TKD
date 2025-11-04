@@ -6,7 +6,7 @@ const Admin = require('./models/Admin');
 const Coach = require('./models/Coach');
 const AssistantCoach = require('./models/AssistantCoach');
 
-// Load env from backend/.env regardless of where script is executed
+
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 async function createAdmin() {
@@ -36,7 +36,7 @@ createAdmin().catch(err => {
   process.exit(1);
 }); 
 
-// Optional: quick coach seeder
+
 async function createCoach(username = 'coach', password = 'coach') {
   await mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
@@ -53,7 +53,7 @@ async function createCoach(username = 'coach', password = 'coach') {
   process.exit(0);
 }
 
-// To seed a coach instead, run: node backend/create-admin.js coach
+
 if (process.argv[2] === 'coach') {
   createCoach().catch(err => { console.error(err); process.exit(1); });
 }
@@ -74,7 +74,7 @@ async function createAssistant(username = 'assistant', password = 'assistant') {
   process.exit(0);
 }
 
-// To seed an assistant coach: node backend/create-admin.js assistant
+
 if (process.argv[2] === 'assistant') {
   createAssistant().catch(err => { console.error(err); process.exit(1); });
 }

@@ -163,17 +163,17 @@ Click **"Advanced"** → **"Add Environment Variable"** and add:
 ### 4.3 Configure Frontend Service
 Fill in the following:
 
-- **Name**: `prototype-tkd-frontend` (or your preferred name)
+- **Name**: `arisetaekwondo` (or your preferred name)
 - **Region**: Same as backend (or closest to users)
 - **Branch**: `main` (or your default branch)
 - **Root Directory**: `frontend`
 - **Build Command**: Leave empty (no build needed)
-- **Publish Directory**: `pages` (HTML files are in `frontend/pages/` directory)
+- **Publish Directory**: `.` (dot - publish everything in the frontend directory so CSS/JS/images are accessible)
 
 ### 4.4 Deploy
 1. Click **"Create Static Site"**
 2. Wait for deployment (usually 1-2 minutes)
-3. **Copy your frontend URL** (e.g., `https://prototype-tkd-frontend.onrender.com`)
+3. **Copy your frontend URL** (e.g., `https://arisetaekwondo.onrender.com`)
    - You'll need this in Step 5!
 
 ---
@@ -214,7 +214,7 @@ git push origin main
 ## Step 6: Test Your Deployment
 
 ### 6.1 Test Frontend
-1. Visit your frontend URL: `https://prototype-tkd-frontend.onrender.com`
+1. Visit your frontend URL: `https://arisetaekwondo.onrender.com`
 2. You should see the homepage
 
 ### 6.2 Test Login
@@ -338,7 +338,7 @@ Before going live, ensure:
 
 ### Your URLs
 - **Backend**: `https://prototype-tkd-backend.onrender.com`
-- **Frontend**: `https://prototype-tkd-frontend.onrender.com`
+- **Frontend**: `https://arisetaekwondo.onrender.com`
 - **Health Check**: `https://prototype-tkd-backend.onrender.com/api/health`
 
 ### Important Files

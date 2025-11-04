@@ -991,51 +991,17 @@ document.addEventListener('DOMContentLoaded', () => {
             restoreLastActiveSection();
           }, 100);
         } else {
-          // User not authenticated
-          // Allow dashboard to load for viewing/testing - NO REDIRECT
-          if (window.location.pathname.includes('dashboard.html')) {
-            console.log('User not authenticated - dashboard in view-only mode');
-            // Only show message if there's no user data loaded (avoid showing after successful login)
-            const greeting = document.getElementById('userGreeting');
-            const userNameEl = document.getElementById('userName');
-            const hasUserData = userNameEl && userNameEl.textContent && userNameEl.textContent !== 'User' && userNameEl.textContent !== 'Loading...';
-            
-            if (greeting && !hasUserData) {
-              greeting.innerHTML = '<div style="padding: 2rem; text-align: center;"><p style="color: #dc2626; font-size: 1.2rem; margin-bottom: 1rem;">Please log in to access the dashboard</p><a href="index.html" style="display: inline-block; padding: 0.75rem 2rem; background: #dc2626; color: white; text-decoration: none; border-radius: 8px;">Go to Login</a></div>';
-              greeting.style.display = 'block';
-            }
-            // Page loads normally, but protected features won't work without login
-            return;
-          }
-          // For other pages, show modal if available
-          if (loginModal && !window.location.pathname.includes('dashboard.html')) {
-            loginModal.classList.remove('hidden');
-          } else if (!window.location.pathname.endsWith('index.html')) {
-            window.location.href = 'index.html';
+          // User not authenticated → hard redirect to login/home
+          if (!window.location.pathname.endsWith('index.html')) {
+            window.location.replace('index.html');
           }
           return;
         }
       } catch (error) {
         console.log('Auth check failed:', error);
-        // Allow dashboard to load even on error (for testing/viewing) - NO REDIRECT
-        if (window.location.pathname.includes('dashboard.html')) {
-          console.log('Authentication check failed - dashboard in view-only mode');
-          const greeting = document.getElementById('userGreeting');
-          const userNameEl = document.getElementById('userName');
-          const hasUserData = userNameEl && userNameEl.textContent && userNameEl.textContent !== 'User' && userNameEl.textContent !== 'Loading...';
-          
-          if (greeting && !hasUserData) {
-            greeting.innerHTML = '<div style="padding: 2rem; text-align: center;"><p style="color: #dc2626; font-size: 1.2rem; margin-bottom: 1rem;">Please log in to access the dashboard</p><a href="index.html" style="display: inline-block; padding: 0.75rem 2rem; background: #dc2626; color: white; text-decoration: none; border-radius: 8px;">Go to Login</a></div>';
-            greeting.style.display = 'block';
-          }
-          // Page loads normally for viewing/testing
-          return;
-        }
-        // For other pages, show modal if available
-        if (loginModal && !window.location.pathname.includes('dashboard.html')) {
-          loginModal.classList.remove('hidden');
-        } else if (!window.location.pathname.endsWith('index.html')) {
-          window.location.href = 'index.html';
+        // On error, be safe and redirect to login/home
+        if (!window.location.pathname.endsWith('index.html')) {
+          window.location.replace('index.html');
         }
         return;
       }
