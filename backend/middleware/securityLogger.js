@@ -1,9 +1,7 @@
-// Security logging middleware
 const securityLogger = (req, res, next) => {
   const startTime = Date.now();
   const originalSend = res.send;
   
-  // Log request details
   const logData = {
     timestamp: new Date().toISOString(),
     method: req.method,
@@ -14,7 +12,6 @@ const securityLogger = (req, res, next) => {
     sessionId: req.sessionID
   };
 
-  // Override res.send to log response
   res.send = function(data) {
     const duration = Date.now() - startTime;
     const responseData = {
@@ -24,7 +21,6 @@ const securityLogger = (req, res, next) => {
       responseSize: data ? data.length : 0
     };
 
-    // Log security events
     if (res.statusCode >= 400) {
       console.warn('SECURITY WARNING:', responseData);
     } else if (res.statusCode >= 300) {
@@ -33,14 +29,12 @@ const securityLogger = (req, res, next) => {
       console.log('REQUEST:', responseData);
     }
 
-    // Call original send
     originalSend.call(this, data);
   };
 
   next();
 };
 
-// Log authentication events
 const logAuthEvent = (event, req, additionalData = {}) => {
   const logData = {
     timestamp: new Date().toISOString(),
@@ -55,7 +49,6 @@ const logAuthEvent = (event, req, additionalData = {}) => {
   console.log('AUTH EVENT:', logData);
 };
 
-// Log suspicious activities
 const logSuspiciousActivity = (activity, req, details = {}) => {
   const logData = {
     timestamp: new Date().toISOString(),

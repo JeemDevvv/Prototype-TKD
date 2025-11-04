@@ -1,32 +1,35 @@
 function getApiBase() {
   const saved = localStorage.getItem('API_BASE');
-  if (saved && /^https?:\/\//.test(saved)) return saved.replace(/\/$/, '');
+  if (saved && /^https?:\/\//.test(saved)) {
+    console.log('Using saved API_BASE from localStorage:', saved);
+    return saved.replace(/\/$/, '');
+  }
   
   try {
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
     
-    // If running locally (any localhost/127.0.0.1 port, or file://), use local backend
-    // IMPORTANT: Use the same hostname as the frontend to avoid cookie issues
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || protocol === 'file:') {
-      // Use the same hostname as the frontend for cookie sharing
       const backendHost = hostname === '127.0.0.1' ? '127.0.0.1' : 'localhost';
-      console.log(`Local development detected, using local backend at http://${backendHost}:4000`);
-      return `http://${backendHost}:4000/api`;
+      const apiUrl = `http://${backendHost}:4000/api`;
+      console.log(`Local development detected, using local backend at ${apiUrl}`);
+      console.log('⚠️ Make sure the backend server is running on port 4000');
+      return apiUrl;
     }
     
-    // Otherwise use production backend
-    console.log('Production detected, using deployed backend');
-    return 'https://prototype-tkd-backend.onrender.com/api';
+    const productionUrl = 'https://prototype-tkd-backend.onrender.com/api';
+    console.log('Production detected, using deployed backend:', productionUrl);
+    return productionUrl;
   } catch (e) {
-    // Default to localhost for local development
-    console.log('Error detecting environment, defaulting to local backend');
-    return 'http://localhost:4000/api';
+    console.error('Error detecting environment:', e);
+    const fallbackUrl = 'http://localhost:4000/api';
+    console.log('Defaulting to local backend:', fallbackUrl);
+    return fallbackUrl;
   }
 }
 const API_BASE = getApiBase();
+console.log('Current API_BASE:', API_BASE);
 
-// Toast Notification System
 function createToastContainer() {
   let container = document.getElementById('toast-container');
   if (!container) {
@@ -43,7 +46,6 @@ function showToast(message, type = 'success', duration = 4000) {
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   
-  // Icons based on type
   const icons = {
     success: '<i class="fas fa-check"></i>',
     error: '<i class="fas fa-times"></i>',
@@ -64,18 +66,15 @@ function showToast(message, type = 'success', duration = 4000) {
   
   container.appendChild(toast);
   
-  // Trigger animation
   setTimeout(() => {
     toast.classList.add('show');
   }, 10);
   
-  // Close button handler
   const closeBtn = toast.querySelector('.toast-close');
   closeBtn.addEventListener('click', () => {
     hideToast(toast);
   });
   
-  // Auto-hide after duration
   if (duration > 0) {
     setTimeout(() => {
       hideToast(toast);
@@ -94,7 +93,6 @@ function hideToast(toast) {
   }, 300);
 }
 
-// Convenience functions
 function showSuccess(message, duration = 4000) {
   return showToast(message, 'success', duration);
 }
@@ -111,7 +109,6 @@ function showInfo(message, duration = 4000) {
   return showToast(message, 'info', duration);
 }
 
-// Get Socket.io server URL
 function getSocketUrl() {
   try {
     const hostname = window.location.hostname;
@@ -128,11 +125,9 @@ function getSocketUrl() {
   }
 }
 
-// Initialize Socket.io connection
 let socket = null;
 let socketConnected = false;
 
-// Global variables for user role and team (accessible to Socket.io handlers)
 let currentUserRole = null;
 let currentUserTeam = null;
 let currentTeamFilter = 'all';
@@ -163,7 +158,6 @@ function initSocket() {
     console.error('Socket.io connection error:', error);
   });
 
-  // Player events
   socket.on('player:created', (player) => {
     console.log('Real-time: Player created', player);
     handlePlayerCreated(player);
@@ -179,7 +173,6 @@ function initSocket() {
     handlePlayerDeleted(data.id);
   });
 
-  // Account events
   socket.on('account:created', (account) => {
     console.log('Real-time: Account created', account);
     handleAccountCreated(account);
@@ -196,22 +189,18 @@ function initSocket() {
   });
 }
 
-// Real-time player handlers
 function handlePlayerCreated(player) {
   console.log('[Real-time Create] Player created:', player);
   const playerTeam = (player.team || '').trim();
   const userTeam = (currentUserTeam || '').trim();
   
-  // Check if user can see this player (role-based filtering)
   if (currentUserRole === 'assistant' && currentUserTeam) {
     if (playerTeam.toUpperCase() !== userTeam.toUpperCase()) {
-      // Assistant Coach can't see players from other teams
       console.log('[Real-time Create] Player from different team, skipping');
       return;
     }
   }
 
-  // Check current filter
   const teamFilter = currentTeamFilter || 'all';
   const shouldShow = teamFilter === 'all' || playerTeam.toUpperCase() === teamFilter.toUpperCase();
   if (!shouldShow) {
@@ -225,14 +214,12 @@ function handlePlayerCreated(player) {
     return;
   }
 
-  // Check if player already exists
   const existingRow = tbody.querySelector(`tr[data-id="${player._id}"]`);
   if (existingRow) {
     console.log('[Real-time Create] Player already exists, skipping');
     return;
   }
 
-  // Check search filter
   const searchTerm = document.getElementById('playerSearch')?.value.toLowerCase() || '';
   const playerName = (player.name || '').toLowerCase();
   if (searchTerm && !playerName.includes(searchTerm)) {
@@ -240,7 +227,6 @@ function handlePlayerCreated(player) {
     return;
   }
 
-  // Create and add row
   const tr = document.createElement('tr');
   tr.setAttribute('data-id', player._id);
   tr.setAttribute('data-team', playerTeam);
@@ -283,17 +269,13 @@ function handlePlayerUpdated(player) {
   const playerTeam = (player.team || '').trim();
   const userTeam = (currentUserTeam || '').trim();
   
-  // Check if user can see this player (for Assistant Coach)
   if (currentUserRole === 'assistant' && currentUserTeam) {
-    // Normalize team names for comparison
     if (playerTeam.toUpperCase() !== userTeam.toUpperCase()) {
-      // Player moved to different team, remove from view if it exists
       console.log('[Real-time Update] Player moved to different team, removing from Assistant Coach view');
       if (row) {
         row.remove();
         updateKpis();
       }
-      // Also hide the details card if it's open for this player
       const detailModal = document.querySelector('.player-detail-modal');
       if (detailModal && detailModal.style.display !== 'none') {
         const detailPlayerId = detailModal.getAttribute('data-player-id');
@@ -305,7 +287,6 @@ function handlePlayerUpdated(player) {
     }
   }
 
-  // Check if player matches current filter
   const teamFilter = currentTeamFilter || 'all';
   const shouldShow = teamFilter === 'all' || playerTeam.toUpperCase() === teamFilter.toUpperCase();
   const searchTerm = document.getElementById('playerSearch')?.value.toLowerCase() || '';
@@ -315,7 +296,6 @@ function handlePlayerUpdated(player) {
   console.log('[Real-time Update] Should show:', shouldShow, 'Matches search:', matchesSearch);
 
   if (shouldShow && matchesSearch) {
-    // Update existing row or create new one
     if (row) {
       const tr = document.createElement('tr');
       tr.setAttribute('data-id', player._id);
@@ -347,12 +327,10 @@ function handlePlayerUpdated(player) {
       }
       console.log('[Real-time Update] Updated existing row');
     } else {
-      // Row doesn't exist but should be shown - create it
       console.log('[Real-time Update] Creating new row');
       handlePlayerCreated(player);
     }
   } else {
-    // Player no longer matches filter, remove it
     if (row) {
       console.log('[Real-time Update] Removing row - no longer matches filter');
       row.remove();
@@ -370,9 +348,7 @@ function handlePlayerDeleted(playerId) {
   }
 }
 
-// Real-time account handlers
 function handleAccountCreated(account) {
-  // Only update if we're on the accounts section and user is admin
   const accountsSection = document.getElementById('sec-accounts');
   if (!accountsSection || !accountsSection.classList.contains('visible')) {
     return;
@@ -382,14 +358,12 @@ function handleAccountCreated(account) {
     return;
   }
 
-  // Reload accounts table
   if (typeof loadAccounts === 'function') {
     loadAccounts();
   }
 }
 
 function handleAccountUpdated(account) {
-  // Only update if we're on the accounts section and user is admin
   const accountsSection = document.getElementById('sec-accounts');
   if (!accountsSection || !accountsSection.classList.contains('visible')) {
     return;
@@ -399,14 +373,12 @@ function handleAccountUpdated(account) {
     return;
   }
 
-  // Reload accounts table
   if (typeof loadAccounts === 'function') {
     loadAccounts();
   }
 }
 
 function handleAccountDeleted(accountId, role) {
-  // Only update if we're on the accounts section and user is admin
   const accountsSection = document.getElementById('sec-accounts');
   if (!accountsSection || !accountsSection.classList.contains('visible')) {
     return;
@@ -416,7 +388,6 @@ function handleAccountDeleted(accountId, role) {
     return;
   }
 
-  // Remove row directly
   const row = document.querySelector(`#accountsTableBody tr[data-id="${accountId}"][data-role="${role}"]`);
   if (row) {
     row.remove();
@@ -434,7 +405,6 @@ window.fetch = function(url, options) {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Reusable "Check Stats" modal open/close
   const statsModal = document.getElementById('statsModal');
   const closeStatsModalBtn = document.getElementById('closeStatsModal');
   const openStatsBtns = document.querySelectorAll('.js-open-stats');
@@ -443,14 +413,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const openLoginBtns = document.querySelectorAll('.js-open-login');
   function openStatsModal(e) {
     if (e) e.preventDefault();
-    // Close login modal if it's open
     if (loginModal && !loginModal.classList.contains('hidden')) {
       loginModal.classList.add('hidden');
     }
-    if (statsModal) statsModal.classList.remove('hidden');
+    if (statsModal) {
+      statsModal.classList.remove('hidden');
+      statsModal.classList.remove('closing');
+    }
   }
   function closeStatsModal() {
-    if (statsModal) statsModal.classList.add('hidden');
+    if (statsModal && !statsModal.classList.contains('hidden')) {
+      statsModal.classList.add('closing');
+      setTimeout(() => {
+        statsModal.classList.add('hidden');
+        statsModal.classList.remove('closing');
+      }, 400);
+    }
   }
   if (openStatsBtns && openStatsBtns.length) {
     openStatsBtns.forEach(btn => btn.addEventListener('click', openStatsModal));
@@ -467,7 +445,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function openLoginModalFn(e) {
     if (e) e.preventDefault();
-    // Close stats modal if it's open
     if (statsModal && !statsModal.classList.contains('hidden')) {
       statsModal.classList.add('hidden');
     }
@@ -489,10 +466,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Login form
   const loginForm = document.getElementById('loginForm');
   if (loginForm) {
-    // Password toggle
     const pwdInput = document.getElementById('loginPassword');
     const togglePwd = loginForm.querySelector('.toggle-password');
     if (togglePwd && pwdInput) {
@@ -521,7 +496,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       let res, result;
       try {
-        // Use the deployed backend URL
         const loginUrl = `${API_BASE}/auth/login`;
         res = await fetch(loginUrl, {
           method: 'POST',
@@ -533,35 +507,34 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Login response:', { status: res.status, result });
       } catch (networkErr) {
         console.error('Login network error:', networkErr);
-        result = { message: 'Network error. Please try again.' };
+        let errorMessage = 'Network error. Please try again.';
+        if (networkErr.message && networkErr.message.includes('Failed to fetch')) {
+          errorMessage = `Cannot connect to backend server. Please check:\n1. Backend server is running (if local: http://localhost:4000)\n2. Backend URL is correct: ${API_BASE}\n3. No firewall blocking the connection`;
+        }
+        result = { message: errorMessage };
         res = { ok: false };
+        console.error('Backend URL being used:', API_BASE);
       }
       if (res.ok) {
-        // All authenticated users (admin, coach, assistant) - close modal and navigate
         console.log('Login successful for role:', result.role);
         
-        // Close login modal
         if (loginModal) {
           loginModal.classList.add('hidden');
         }
         
-        // Clear any error messages
         const errEl = document.getElementById('loginError');
         if (errEl) {
           errEl.textContent = '';
           errEl.classList.remove('shake');
         }
         
-        // Reset form
         if (loginForm) {
           loginForm.reset();
         }
         
-        // If on index page, navigate to dashboard
         if (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/')) {
           window.location.href = 'dashboard.html';
         } else {
-          // If already on dashboard, reload to refresh authentication state
           window.location.reload();
         }
       } else {
@@ -569,7 +542,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (errEl) {
           errEl.textContent = result.message || 'Invalid Credentials';
           errEl.classList.remove('shake');
-          // Trigger reflow for restarting animation
           void errEl.offsetWidth;
           errEl.classList.add('shake');
         }
@@ -581,7 +553,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Logout button
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
@@ -590,7 +561,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Check My Stats
   const searchForm = document.getElementById('searchForm');
   if (searchForm) {
     searchForm.addEventListener('submit', async (e) => {
@@ -600,7 +570,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = await res.json();
       const searchResult = document.getElementById('searchResult');
       if (res.ok) {
-        // Link to player profile page
         searchResult.innerHTML = `<a href="player-profile.html?nccRef=${result.nccRef}">View Profile: ${result.name}</a>`;
       } else {
         searchResult.textContent = result.message || 'Record not found';
@@ -608,14 +577,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Player Profile (public) - Enhanced Modern Version
   if (window.location.pathname.endsWith('player-profile.html')) {
     const params = new URLSearchParams(window.location.search);
     const nccRef = params.get('nccRef');
     const loadingScreen = document.getElementById('loadingScreen');
     const errorMessage = document.getElementById('errorMessage');
     
-    // Show loading screen
     if (loadingScreen) {
       loadingScreen.classList.remove('hidden');
     }
@@ -624,14 +591,12 @@ document.addEventListener('DOMContentLoaded', () => {
       fetch(`${API_BASE}/player/search?nccRef=${encodeURIComponent(nccRef)}`)
         .then(res => res.json())
         .then(player => {
-          // Hide loading screen
           if (loadingScreen) {
             loadingScreen.classList.add('hidden');
           }
           
           if (player && player.nccRef) {
             loadPlayerProfile(player);
-            // Hide error message if it was showing
             if (errorMessage) {
               errorMessage.classList.add('hidden');
             }
@@ -654,11 +619,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function loadPlayerProfile(player) {
-      // Set dynamic background based on team
       const heroBackground = document.querySelector('.hero-background');
       const profileHero = document.querySelector('.profile-hero');
       if (heroBackground && player.team) {
-        // Map team names to background images
         const teamImages = {
           'EARIST': '../public/EARIST.jpg',
           'ERVHS': '../public/ERVHS.jpg',
@@ -670,13 +633,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const teamName = (player.team || '').toUpperCase().trim();
         const backgroundImage = teamImages[teamName] || teamImages['ARISE']; // Default to ARISE
         
-        // Set background image with overlay
         heroBackground.style.backgroundImage = `linear-gradient(rgba(10,10,20,0.7), rgba(10,10,20,0.7)), url('${backgroundImage}')`;
         heroBackground.style.backgroundSize = 'cover';
         heroBackground.style.backgroundPosition = 'center center';
         heroBackground.style.backgroundRepeat = 'no-repeat';
         
-        // Also update profile-hero background for consistency
         if (profileHero) {
           profileHero.style.backgroundImage = `linear-gradient(rgba(156, 51, 40, 0.6), rgba(156, 51, 40, 0.6)), url('${backgroundImage}')`;
           profileHero.style.backgroundSize = 'cover';
@@ -685,55 +646,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       
-      // Hero Section
             document.getElementById('profileName').textContent = player.name;
             document.getElementById('profileNccRef').textContent = player.nccRef;
             document.getElementById('profileGender').textContent = player.gender || '-';
       
-      // Set team meta-item
       const profileTeamEl = document.getElementById('profileTeam');
       if (profileTeamEl) {
         profileTeamEl.textContent = player.team ? `Team: ${player.team}` : '-';
       }
       
-      // Calculate age
       if (player.birthdate) {
         const age = calculateAge(new Date(player.birthdate));
         document.getElementById('profileAge').textContent = `${age} years old`;
       }
       
-      // Set avatar badge with belt rank
       const beltBadge = document.getElementById('beltBadge');
       if (beltBadge) {
         beltBadge.textContent = player.beltRank || '-';
       }
       
-      // Handle profile image
       const profileAvatar = document.getElementById('profileAvatar');
       if (profileAvatar) {
         if (player.photoUrl && player.photoUrl.trim()) {
-          // If player has a photo URL, display the image
           profileAvatar.innerHTML = `<img src="${player.photoUrl}" alt="${player.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
         } else {
-          // If no photo, show default icon
           profileAvatar.innerHTML = '<i class="fas fa-user"></i>';
         }
       }
       
-      // Personal Information Card
       document.getElementById('profileFullName').textContent = player.name;
       document.getElementById('profileBirthdate').textContent = player.birthdate ? 
         new Date(player.birthdate).toLocaleDateString() : '-';
       document.getElementById('profileAddress').textContent = player.address || '-';
       document.getElementById('profileContact').textContent = player.contactNumber || '-';
       
-      // Belt & Training Card
       document.getElementById('currentBeltRank').textContent = player.beltRank || '-';
       document.getElementById('nextBeltRank').textContent = player.nextBelt || '-';
       document.getElementById('lastPromotionExam').textContent = player.lastPromotionExam ? 
         new Date(player.lastPromotionExam).toLocaleDateString() : '-';
       
-      // Animate belt progress (mock progress for demo)
       setTimeout(() => {
         const progressFill = document.getElementById('beltProgress');
         if (progressFill) {
@@ -741,14 +692,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }, 1000);
       
-      // Competition Statistics Card
       const medals = player.stats?.medals || 0;
       const competitions = player.stats?.competitions || [];
       
       document.getElementById('statMedals').textContent = medals;
       document.getElementById('statCompetitions').textContent = competitions.length;
       
-      // Load competitions list
       const competitionsList = document.getElementById('competitionsList');
       if (competitionsList && competitions.length > 0) {
         competitionsList.innerHTML = competitions.map(comp => 
@@ -758,7 +707,6 @@ document.addEventListener('DOMContentLoaded', () => {
         competitionsList.innerHTML = '<span class="competition-tag">No competitions yet</span>';
       }
       
-      // Achievements Card
       const achievementsList = document.getElementById('achievementsList');
       if (achievementsList) {
         const achievements = player.achievements || [];
@@ -783,13 +731,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       
-      // Self-Defense Card
       const selfDefenseForms = document.getElementById('selfDefenseForms');
       if (selfDefenseForms) {
-        // Get requiredForms from the direct field on the player
         const requiredForms = player.requiredForms || '';
         if (requiredForms && requiredForms.trim()) {
-          // Split by lines and filter out empty lines
           const forms = requiredForms.split('\n').filter(form => form.trim()).map(form => form.trim());
           if (forms.length > 0) {
             selfDefenseForms.innerHTML = forms.map(form => `
@@ -811,7 +756,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       
-      // Animate cards on load
       const cards = document.querySelectorAll('.profile-card');
       cards.forEach((card, index) => {
         setTimeout(() => {
@@ -840,24 +784,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
 
-  // NCC Ref Auto-generation Function
   function generateNccRef(name) {
     if (!name) return null;
     
-    // Get last 3 letters of surname (last word)
     const nameParts = name.trim().split(' ');
     const surname = nameParts[nameParts.length - 1];
     const lastThreeLetters = surname.slice(-3).toUpperCase();
     
-    // Generate unique number (timestamp based for uniqueness)
     const uniqueNumber = Date.now().toString().slice(-6);
     
     return `${lastThreeLetters}${uniqueNumber}`;
   }
 
-  // Dashboard logic (fetch stats, players, handle add/edit/delete/export)
   if (window.location.pathname.endsWith('dashboard.html')) {
-    // Fetch current user data and update greeting
     async function loadUserData() {
       try {
         console.log('Loading user data...');
@@ -877,13 +816,11 @@ document.addEventListener('DOMContentLoaded', () => {
           
           const userNameEl = document.getElementById('userName');
           if (userNameEl) {
-            // Use the actual name from the database, not just username
             const displayName = userData.name || userData.username || 'User';
             userNameEl.textContent = displayName;
             console.log('User name updated to:', displayName);
           }
           
-          // Update admin role text in sidebar
           const adminRoleTextEl = document.getElementById('adminRoleText');
           if (adminRoleTextEl) {
             let roleText = 'ARISE Admin';
@@ -896,7 +833,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Updated admin role text:', roleText);
           }
           
-          // Ensure greeting is visible
           const greeting = document.getElementById('userGreeting');
           if (greeting) {
             greeting.style.display = 'block';
@@ -906,12 +842,10 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Greeting element not found!');
           }
         } else if (response.status === 401) {
-          // User not authenticated - silently handle (checkAuth will handle redirect)
           const greeting = document.getElementById('userGreeting');
           if (greeting) {
             greeting.style.display = 'none';
           }
-          // Don't show modal on dashboard - checkAuth will redirect
           return;
         } else {
           console.log('Failed to fetch user data, status:', response.status);
@@ -919,7 +853,6 @@ document.addEventListener('DOMContentLoaded', () => {
           if (userNameEl) {
             userNameEl.textContent = 'User';
           }
-          // Show greeting even if user data fails to load
           const greeting = document.getElementById('userGreeting');
           if (greeting) {
             greeting.style.display = 'block';
@@ -931,7 +864,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (userNameEl) {
           userNameEl.textContent = 'User';
         }
-        // Show greeting even on error
         const greeting = document.getElementById('userGreeting');
         if (greeting) {
           greeting.style.display = 'block';
@@ -939,7 +871,32 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     
-    // Check if user is authenticated first
+    const restoreLastActiveSection = () => {
+      const lastSection = localStorage.getItem('lastActiveSection');
+      if (lastSection && ['home', 'players', 'accounts', 'settings'].includes(lastSection)) {
+        if (lastSection === 'accounts') {
+          if (currentUserRole === 'admin') {
+            setSection(lastSection);
+            updateNavigationActiveState(lastSection);
+          } else {
+            setSection('home');
+            updateNavigationActiveState('home');
+          }
+        } else {
+          setSection(lastSection);
+          updateNavigationActiveState(lastSection);
+        }
+      } else {
+        setSection('home');
+        updateNavigationActiveState('home');
+      }
+      
+      const currentSection = localStorage.getItem('lastActiveSection');
+      if (currentSection === 'home' || !currentSection) {
+        updateKpis();
+      }
+    };
+    
     async function checkAuth() {
       try {
         const response = await fetch(`${API_BASE}/auth/me`, {
@@ -950,27 +907,22 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
 
-        // Only log auth status in development or if there's an actual error
         if (!response.ok && response.status !== 401) {
           console.log('Auth response status:', response.status);
         }
 
         if (response.ok) {
-          // User is authenticated, load data and show greeting
           const userData = await response.json();
           console.log('User authenticated with role:', userData.role);
           console.log('User data:', userData);
           
-          // Set currentUserTeam immediately for Socket.io handlers
           if (userData.team) {
             currentUserTeam = userData.team;
             console.log('[Auth] Set currentUserTeam:', currentUserTeam);
           }
           
-          // Update navigation based on user role
           updateNavigationForRole(userData.role);
           
-          // Immediately remove team tabs if Assistant Coach (before async operations)
           if (userData.role === 'assistant' && userData.team) {
             updateTeamFilterVisibility(userData.role, userData.team);
           }
@@ -978,7 +930,6 @@ document.addEventListener('DOMContentLoaded', () => {
           await loadUserData();
           const greeting = document.getElementById('userGreeting');
           if (greeting) {
-            // Clear any login message if it exists
             const loginMsg = greeting.querySelector('div[style*="color: #dc2626"]');
             if (loginMsg) {
               greeting.innerHTML = ''; // Clear the login message
@@ -986,12 +937,10 @@ document.addEventListener('DOMContentLoaded', () => {
             greeting.style.display = 'block';
           }
           
-          // Restore the last active section after user data and role are loaded
           setTimeout(() => {
             restoreLastActiveSection();
           }, 100);
         } else {
-          // User not authenticated → hard redirect to login/home
           if (!window.location.pathname.endsWith('index.html')) {
             window.location.replace('index.html');
           }
@@ -999,7 +948,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } catch (error) {
         console.log('Auth check failed:', error);
-        // On error, be safe and redirect to login/home
         if (!window.location.pathname.endsWith('index.html')) {
           window.location.replace('index.html');
         }
@@ -1007,13 +955,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     
-    // Initialize Socket.io connection
     initSocket();
     
-    // Check authentication and load data
     checkAuth();
     
-    // Initialize greeting visibility for home section
     document.body.classList.add('home-section');
     const greeting = document.getElementById('userGreeting');
     if (greeting) {
@@ -1022,7 +967,6 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('Initial greeting display set');
     }
     
-    // Ensure greeting is visible after a short delay
     setTimeout(() => {
       const greeting = document.getElementById('userGreeting');
       if (greeting) {
@@ -1032,45 +976,34 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }, 100);
     
-    // Also load user data when page becomes visible (in case of session refresh)
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
         loadUserData();
       }
     });
     
-    // Attach export listeners on page load
     attachExportListeners();
 
-    // Role-based navigation control
-    // currentUserRole is declared globally above for Socket.io handlers
 
-    // Function to update team filter buttons based on user role and team
     function updateTeamFilterVisibility(role, team) {
       const teamFilterButtons = document.querySelectorAll('.team-filter-btn');
       
       if (role === 'assistant' && team) {
-        // For Assistant Coach, remove all team tabs except their assigned team
         teamFilterButtons.forEach(btn => {
           const btnTeam = btn.getAttribute('data-team');
           if (btnTeam === 'all' || btnTeam !== team) {
-            // Remove buttons that are not the Assistant Coach's assigned team
             btn.remove();
           } else {
-            // Keep and activate their assigned team button
             btn.classList.add('active');
           }
         });
       } else {
-        // For Admin and Coach, ensure all team buttons are present and visible
-        // (Buttons should already exist in HTML, just make sure they're visible)
         teamFilterButtons.forEach(btn => {
           btn.style.display = '';
         });
       }
     }
 
-    // Function to update navigation based on user role
     function updateNavigationForRole(role) {
       console.log('Updating navigation for role:', role);
       currentUserRole = role;
@@ -1078,19 +1011,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const accountsNavLink = document.querySelector('[data-section="accounts"]');
       
       if (role === 'admin') {
-        // Admin can see all sections
         if (accountsNavLink) {
           accountsNavLink.style.display = 'flex';
           console.log('Admin access: Showing Accounts section');
         }
       } else if (role === 'coach' || role === 'assistant') {
-        // Coach and Assistant Coach cannot see Accounts section
         if (accountsNavLink) {
           accountsNavLink.style.display = 'none';
           console.log(`${role} access: Hiding Accounts section`);
         }
       } else {
-        // Not authenticated or unknown role - show all sections (for login page)
         if (accountsNavLink) {
           accountsNavLink.style.display = 'flex';
           console.log('Not authenticated: Showing all sections');
@@ -1098,7 +1028,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Function to get current user role
     async function getCurrentUserRole() {
       try {
         const response = await fetch(`${API_BASE}/auth/me`, {
@@ -1112,7 +1041,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (response.ok) {
           const userData = await response.json();
           console.log('Current user role:', userData.role);
-          // Also set currentUserTeam if available
           if (userData.team && typeof currentUserTeam !== 'undefined') {
             currentUserTeam = userData.team;
             console.log('Current user team set:', currentUserTeam);
@@ -1128,18 +1056,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Custom notification functions
     function showAccessDeniedNotification() {
       const container = document.getElementById('notificationContainer');
       const notification = document.getElementById('notification');
       
       if (container && notification) {
-        // Show the notification with animation
         container.classList.add('show');
         notification.classList.remove('hidden');
         notification.classList.add('slide-in');
         
-        // No auto-hide - user must close manually
       }
     }
 
@@ -1148,15 +1073,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const notification = document.getElementById('notification');
       
       if (container && notification) {
-        // Remove slide-in class first
         notification.classList.remove('slide-in');
         
-        // Small delay to ensure smooth transition
         setTimeout(() => {
-          // Add slide-out class for animation
           notification.classList.add('slide-out');
           
-          // Wait for slide-out animation to complete
           setTimeout(() => {
             container.classList.remove('show');
             notification.classList.add('hidden');
@@ -1166,7 +1087,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Add event listeners for notification (moved outside DOMContentLoaded)
     const closeBtn = document.getElementById('notificationClose');
     const container = document.getElementById('notificationContainer');
     
@@ -1182,14 +1102,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Accounts Management - Add New Account functionality
     const addAccountBtn = document.getElementById('addAccountBtn');
     const accountModal = document.getElementById('accountModal');
     const closeAccountModal = document.getElementById('closeAccountModal');
     const accountForm = document.getElementById('accountForm');
     const modalTitle = document.getElementById('modalTitle');
 
-    // Open Add Account Modal
     if (addAccountBtn) {
       addAccountBtn.addEventListener('click', () => {
         console.log('Add Account button clicked');
@@ -1200,20 +1118,17 @@ document.addEventListener('DOMContentLoaded', () => {
             accountForm.reset();
             accountForm.setAttribute('data-mode', 'add');
             document.getElementById('accountId').value = '';
-            // Make password field required for add mode
             const passwordField = document.getElementById('accountPassword');
             if (passwordField) {
               passwordField.setAttribute('required', 'required');
               passwordField.placeholder = 'Enter password';
             }
-            // Reset team field
             const teamField = document.getElementById('accountTeam');
             if (teamField) {
               teamField.removeAttribute('disabled');
               teamField.removeAttribute('required');
               teamField.value = '';
             }
-            // Reset role field to trigger team field requirement logic
             const roleField = document.getElementById('accountRole');
             if (roleField) {
               roleField.value = '';
@@ -1223,7 +1138,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Close Account Modal
     if (closeAccountModal) {
       closeAccountModal.addEventListener('click', () => {
         if (accountModal) {
@@ -1232,7 +1146,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Close modal when clicking outside
     if (accountModal) {
       accountModal.addEventListener('click', (e) => {
         if (e.target === accountModal) {
@@ -1241,7 +1154,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Cancel button handler
     const cancelAccountBtn = document.getElementById('cancelAccountBtn');
     if (cancelAccountBtn) {
       cancelAccountBtn.addEventListener('click', () => {
@@ -1251,7 +1163,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Handle Account Role Change - Show/hide team requirement
     const accountRoleField = document.getElementById('accountRole');
     const accountTeamField = document.getElementById('accountTeam');
     if (accountRoleField && accountTeamField) {
@@ -1279,7 +1190,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Handle Account Form Submission
     if (accountForm) {
       accountForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1302,11 +1212,9 @@ document.addEventListener('DOMContentLoaded', () => {
           let successMessage;
           
           if (mode === 'edit') {
-            // Update existing account
             const accountId = data.id;
             delete data.id; // Remove id from data
             
-            // Don't send password if it's empty (for edit mode)
             if (!data.password || data.password.trim() === '') {
               delete data.password;
             }
@@ -1321,7 +1229,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             successMessage = 'Account updated successfully!';
           } else {
-            // Create new account
             response = await fetch(`${API_BASE}/accounts`, {
               method: 'POST',
               headers: {
@@ -1344,19 +1251,16 @@ document.addEventListener('DOMContentLoaded', () => {
             accountForm.reset();
             accountForm.setAttribute('data-mode', 'add');
             document.getElementById('accountId').value = '';
-            // Reset password field to required for add mode
             const passwordField = document.getElementById('accountPassword');
             if (passwordField) {
               passwordField.setAttribute('required', 'required');
               passwordField.placeholder = 'Enter password';
             }
             
-            // Log activity
             const action = accountForm.getAttribute('data-mode') === 'edit' ? 'updated' : 'created';
             await logActivity(`${action} an account`, `Role: ${data.role}, Name: ${data.name || data.username}`);
             loadRecentHistory(); // Refresh recent history
             
-            // Re-enable all fields for add mode
             const nameField = document.getElementById('accountName');
             const emailField = document.getElementById('accountEmail');
             const teamField = document.getElementById('accountTeam');
@@ -1377,7 +1281,6 @@ document.addEventListener('DOMContentLoaded', () => {
               teamField.value = '';
               teamField.title = '';
             }
-            // Refresh the accounts list with a small delay to ensure DB is updated
             console.log('Refreshing accounts list after successful update...');
             setTimeout(() => {
               loadAccounts();
@@ -1393,7 +1296,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Load and display accounts
     async function loadAccounts() {
       try {
         console.log('Loading accounts...');
@@ -1421,7 +1323,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Display accounts in the table
     function displayAccounts(accounts) {
       console.log('displayAccounts called with:', accounts);
       const tbody = document.getElementById('accountsTableBody');
@@ -1476,7 +1377,6 @@ document.addEventListener('DOMContentLoaded', () => {
       
       console.log('Table update completed. Total rows in table:', tbody.children.length);
       
-      // Add scrollable indicator if content overflows
       setTimeout(() => {
         const container = document.querySelector('.accounts-table-container');
         if (container) {
@@ -1489,19 +1389,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }, 100);
       
-      // Add a visual indicator that the table was updated
       tbody.style.backgroundColor = '#e8f5e8';
       setTimeout(() => {
         tbody.style.backgroundColor = '';
       }, 1000);
     }
 
-    // Edit account function
     window.editAccount = async function(accountId, role) {
       console.log('Edit account:', accountId, role);
       
       try {
-        // Fetch account details
         const response = await fetch(`${API_BASE}/accounts`, {
           method: 'GET',
           headers: {
@@ -1517,7 +1414,6 @@ document.addEventListener('DOMContentLoaded', () => {
           if (account) {
             console.log('Account found for editing:', account);
             
-            // Populate form with account data
             document.getElementById('accountId').value = account._id;
             document.getElementById('accountName').value = account.name || account.username;
             document.getElementById('accountUsername').value = account.username;
@@ -1532,20 +1428,17 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Email:', document.getElementById('accountEmail').value);
             console.log('Role:', document.getElementById('accountRole').value);
             
-            // Set form to edit mode
             accountForm.setAttribute('data-mode', 'edit');
             modalTitle.textContent = 'Edit Account';
             
             console.log('Form mode set to:', accountForm.getAttribute('data-mode'));
             
-            // Make password field optional for edit mode
             const passwordField = document.getElementById('accountPassword');
             if (passwordField) {
               passwordField.removeAttribute('required');
               passwordField.placeholder = 'Leave blank to keep current password';
             }
             
-            // Disable name, email, and team fields for admin accounts
             const nameField = document.getElementById('accountName');
             const emailField = document.getElementById('accountEmail');
             const teamField = document.getElementById('accountTeam');
@@ -1579,7 +1472,6 @@ document.addEventListener('DOMContentLoaded', () => {
               }
               if (teamField) {
                 teamField.disabled = false;
-                // Team is required for Assistant Coach
                 if (account.role === 'assistant') {
                   teamField.setAttribute('required', 'required');
                 } else {
@@ -1589,7 +1481,6 @@ document.addEventListener('DOMContentLoaded', () => {
               }
             }
             
-            // Show modal
             accountModal.classList.remove('hidden');
           } else {
             showError('Account not found');
@@ -1603,14 +1494,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    // Delete account function
     window.deleteAccount = function(accountId, role) {
       if (confirm('Are you sure you want to delete this account? This action cannot be undone.')) {
         deleteAccountRequest(accountId, role);
       }
     };
 
-    // Delete account request
     async function deleteAccountRequest(accountId, role) {
       try {
         const response = await fetch(`${API_BASE}/accounts/${accountId}`, {
@@ -1636,7 +1525,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Load accounts when accounts section is shown
     const accountsNavLink = document.querySelector('[data-section="accounts"]');
     if (accountsNavLink) {
       accountsNavLink.addEventListener('click', () => {
@@ -1646,7 +1534,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Role filter functionality
     const roleFilter = document.getElementById('roleFilter');
     const accountSearch = document.getElementById('accountSearch');
     let allAccounts = []; // Store all accounts for filtering
@@ -1667,7 +1554,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Apply both role and search filters
     function applyFilters() {
       const selectedRole = roleFilter ? roleFilter.value : '';
       const searchTerm = accountSearch ? accountSearch.value.toLowerCase() : '';
@@ -1676,7 +1562,6 @@ document.addEventListener('DOMContentLoaded', () => {
       
       let filteredAccounts = allAccounts;
       
-      // Filter by role
       if (selectedRole && selectedRole !== '') {
         filteredAccounts = filteredAccounts.filter(account => {
           return account.role === selectedRole;
@@ -1684,7 +1569,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`After role filter (${selectedRole}):`, filteredAccounts.length, 'accounts');
       }
       
-      // Filter by search term
       if (searchTerm && searchTerm.trim() !== '') {
         filteredAccounts = filteredAccounts.filter(account => {
           const name = (account.name || account.username || '').toLowerCase();
@@ -1704,8 +1588,6 @@ document.addEventListener('DOMContentLoaded', () => {
       displayAccounts(filteredAccounts);
     }
     
-    // (Optional) fetch summary if needed elsewhere
-    // Fetch players
     function loadPlayers() {
       const tbody = document.querySelector('#playerTable tbody');
       if (tbody) tbody.innerHTML = '';
@@ -1717,7 +1599,6 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(players => {
           if (!tbody) return;
           if (Array.isArray(players)) {
-            // For Assistant Coach: Filter players before displaying to prevent showing all teams
             let filteredPlayers = players;
             if (currentUserRole === 'assistant' && currentUserTeam) {
               const userTeamUpper = (currentUserTeam || '').toUpperCase().trim();
@@ -1725,7 +1606,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const playerTeam = (player.team || '').toUpperCase().trim();
                 return playerTeam === userTeamUpper;
               });
-              // Ensure filter is set correctly
               currentTeamFilter = currentUserTeam;
             }
             
@@ -1746,7 +1626,6 @@ document.addEventListener('DOMContentLoaded', () => {
                   </button>
                 </td>
               `;
-              // Add data attributes for filtering
               tr.setAttribute('data-team', player.team || '');
               tr.setAttribute('data-gender', player.gender || '');
               tr.setAttribute('data-id', player._id);
@@ -1759,12 +1638,10 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           attachExportListeners();
           
-          // Apply filters immediately after loading players (especially for Assistant Coach)
           if (typeof applyPlayerFilters === 'function') {
             applyPlayerFilters();
           }
           
-          // Add scrollable indicator if content overflows
           setTimeout(() => {
             const container = document.querySelector('.players-table-container') || document.querySelector('.player-table-section');
             if (container) {
@@ -1788,9 +1665,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     loadPlayers();
 
-    // Client-side filter on the table
     const searchInput = document.getElementById('playerSearch');
-    // currentTeamFilter is declared globally above for Socket.io handlers
     
     if (searchInput) {
       searchInput.addEventListener('input', () => {
@@ -1798,11 +1673,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
     
-    // Team filter buttons functionality
     const teamFilterButtons = document.querySelectorAll('.team-filter-btn');
-    // currentUserTeam is declared globally above for Socket.io handlers
     
-    // Get user's team information
     async function getUserTeam() {
       try {
         const response = await fetch(`${API_BASE}/auth/me`, {
@@ -1819,20 +1691,15 @@ document.addEventListener('DOMContentLoaded', () => {
       return null;
     }
     
-    // Initialize team filter after user data is loaded
     setTimeout(async () => {
       currentUserTeam = await getUserTeam();
       setupTeamFilters();
       
-      // For Assistant Coach, remove all team tabs except their assigned team
       if (currentUserRole === 'assistant' && currentUserTeam) {
         currentTeamFilter = currentUserTeam;
-        // Use the updateTeamFilterVisibility function which removes buttons
         updateTeamFilterVisibility(currentUserRole, currentUserTeam);
-        // Apply filter to show only their team
         applyPlayerFilters();
       } else {
-        // For Admin and Coach, ensure all team buttons are visible
         const teamFilterButtons = document.querySelectorAll('.team-filter-btn');
         teamFilterButtons.forEach(btn => {
           btn.style.display = '';
@@ -1841,24 +1708,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 100);
     
     function setupTeamFilters() {
-      // Re-query buttons in case some were removed (for Assistant Coach)
       const currentButtons = document.querySelectorAll('.team-filter-btn');
       currentButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
           const selectedTeam = e.target.getAttribute('data-team');
           
-          // Update active button
           document.querySelectorAll('.team-filter-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           currentTeamFilter = selectedTeam;
           
-          // Apply filters
           applyPlayerFilters();
         });
       });
     }
     
-    // Apply both search and team filters
     function applyPlayerFilters() {
       const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
         const rows = document.querySelectorAll('#playerTable tbody tr');
@@ -1867,18 +1730,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const team = row.getAttribute('data-team') || '';
           const text = row.textContent.toLowerCase();
         
-        // Check team filter
         const teamMatch = currentTeamFilter === 'all' || team === currentTeamFilter;
         
-        // Check search filter
         const searchMatch = !searchTerm || text.includes(searchTerm);
         
-        // Show row if both filters match
         row.style.display = (teamMatch && searchMatch) ? '' : 'none';
       });
     }
 
-    // --- Add/Edit Player Modal Logic ---
     const addPlayerBtn = document.getElementById('addPlayerBtn');
     const playerModal = document.getElementById('playerModal');
     const closeModalBtn = document.getElementById('closeModalBtn');
@@ -1897,35 +1756,32 @@ document.addEventListener('DOMContentLoaded', () => {
         playerForm.reset();
         editingPlayerId = null;
         playerModal.classList.remove('hidden');
-        // Reset preview and counters
         const preview = document.getElementById('photoPreview');
         if (preview) { preview.src = ''; preview.style.display = 'none'; }
         const counter = document.getElementById('formsCounter');
         if (counter) counter.textContent = '0/280';
-        // Reset NCC Ref display
         if (autoNccDisplay) autoNccDisplay.style.display = 'none';
       });
 
-      // NCC Ref input validation
       if (nccRefInput && autoNccDisplay && autoNccValue) {
         nccRefInput.addEventListener('input', (e) => {
           const value = e.target.value.trim().toUpperCase();
           const nameInput = document.querySelector('input[name="name"]');
           
           if (value === 'N/A' && nameInput && nameInput.value.trim()) {
-            // Show auto-generated NCC Ref
+            
             const autoNccRef = generateNccRef(nameInput.value.trim());
             if (autoNccRef) {
               autoNccValue.textContent = autoNccRef;
               autoNccDisplay.style.display = 'block';
             }
           } else {
-            // Hide auto-generated display
+            
             autoNccDisplay.style.display = 'none';
           }
         });
 
-        // Also listen to name input changes
+        
         const nameInput = document.querySelector('input[name="name"]');
         if (nameInput) {
           nameInput.addEventListener('input', (e) => {
@@ -1950,22 +1806,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData(playerForm);
         const data = Object.fromEntries(formData.entries());
         
-        // NCC Ref validation and auto-generation
+        
         if (data.nccRef && data.nccRef.trim().toUpperCase() === 'N/A') {
-          // Generate auto NCC Ref for players without NCC #
+          
           const autoNccRef = generateNccRef(data.name);
           if (autoNccRef) {
             data.nccRef = autoNccRef;
             data.isAutoGenerated = true; // Flag to identify auto-generated NCC
           }
         } else if (data.nccRef && data.nccRef.trim().toUpperCase() !== 'N/A') {
-          // Validate that it's not just "N/A" if they want to enter something else
           data.isAutoGenerated = false;
         }
-        // Handle attached photo file -> convert to Data URL for photoUrl
         if (formData.get('photoFile') && formData.get('photoFile').size > 0) {
           const file = formData.get('photoFile');
-          // Basic validation: type and size (<= 2MB)
           if (!/^image\//.test(file.type)) {
             showWarning('Please select a valid image file.');
             return;
@@ -1993,9 +1846,6 @@ document.addEventListener('DOMContentLoaded', () => {
           data.stats.competitions = data.competitions.split(',').map(s => s.trim()).filter(Boolean);
           delete data.competitions;
         }
-        // Keep requiredForms as a direct field on the player (not nested under stats)
-        // The data.requiredForms is already in the correct location
-        // Convert birthdate to ISO if present
         if (data.birthdate) data.birthdate = new Date(data.birthdate).toISOString();
         if (data.lastPromotionExam) data.lastPromotionExam = new Date(data.lastPromotionExam).toISOString();
         let url = `${API_BASE}/player/`;
@@ -2014,19 +1864,15 @@ document.addEventListener('DOMContentLoaded', () => {
           if (res.ok) {
             playerModal.classList.add('hidden');
             
-            // Log activity
             const action = editingPlayerId ? 'updated' : 'added';
             await logActivity(`${action} a player`, `Player: ${data.name}`);
             
-            // Show success message
             showSuccess(`Player ${action} successfully!`);
             
-            // For Assistant Coach: Ensure team filter is set before reloading
             if (currentUserRole === 'assistant' && currentUserTeam) {
               currentTeamFilter = currentUserTeam;
             }
             
-            // Reload players to refresh the table (filter will be applied immediately in loadPlayers callback)
             loadPlayers();
             
             loadRecentHistory(); // Refresh recent history
@@ -2038,7 +1884,6 @@ document.addEventListener('DOMContentLoaded', () => {
           showError('Cannot reach server. Please start the backend or check your connection.');
         }
       });
-      // Live photo preview
       if (photoFileInput && photoPreview) {
         photoFileInput.addEventListener('change', () => {
           const file = photoFileInput.files && photoFileInput.files[0];
@@ -2053,16 +1898,13 @@ document.addEventListener('DOMContentLoaded', () => {
           reader.readAsDataURL(file);
         });
       }
-      // Forms textarea counter
       if (formsTextarea && formsCounter) {
         const updateCount = () => { formsCounter.textContent = `${formsTextarea.value.length}/280`; };
         formsTextarea.addEventListener('input', updateCount);
         updateCount();
       }
     }
-    // --- End Add/Edit Player Modal Logic ---
 
-    // Sidebar navigation and section switching
     const setSection = (key) => {
       const sections = {
         home: document.getElementById('sec-home'),
@@ -2073,35 +1915,27 @@ document.addEventListener('DOMContentLoaded', () => {
       Object.values(sections).forEach(s => { if (s) s.classList.remove('visible'); });
       if (sections[key]) sections[key].classList.add('visible');
       
-      // Save current section to localStorage for persistence across page reloads
       localStorage.setItem('lastActiveSection', key);
-      // Header title/actions
       const title = document.getElementById('sectionTitle');
       const greeting = document.getElementById('userGreeting');
       if (title) title.textContent = key.charAt(0).toUpperCase() + key.slice(1);
-      // Show greeting only on Home page
       if (greeting) {
         if (key === 'home') {
-          // Show greeting on home section
           document.body.classList.add('home-section');
           greeting.style.display = 'block';
           greeting.style.visibility = 'visible';
         } else {
-          // Hide greeting on other sections
           document.body.classList.remove('home-section');
           greeting.style.display = 'none';
         }
       }
 
-      // Check if user has permission to access this section
       if (key === 'accounts') {
         if (currentUserRole === null) {
-          // Role not loaded yet, get it first
           getCurrentUserRole().then(role => {
             if (role !== 'admin') {
               console.log('Access denied: Only admins can access Accounts section');
               showAccessDeniedNotification();
-              // Switch back to home section
               const homeLink = document.querySelector('[data-section="home"]');
               if (homeLink) {
                 homeLink.click();
@@ -2111,7 +1945,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (currentUserRole !== 'admin') {
           console.log('Access denied: Only admins can access Accounts section');
           showAccessDeniedNotification();
-          // Switch back to home section
           const homeLink = document.querySelector('[data-section="home"]');
           if (homeLink) {
             homeLink.click();
@@ -2127,7 +1960,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const isPlayers = key === 'players';
       [searchWrap, teamsFilterContainer, addBtn, ex1, ex2].forEach(el => { if (!el) return; el.style.display = isPlayers ? '' : 'none'; });
       
-      // Load accounts when accounts section is shown
       if (key === 'accounts') {
         setTimeout(() => {
           loadAccounts();
@@ -2135,41 +1967,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    // Function to restore the last active section from localStorage
-    const restoreLastActiveSection = () => {
-      const lastSection = localStorage.getItem('lastActiveSection');
-      if (lastSection && ['home', 'players', 'accounts', 'settings'].includes(lastSection)) {
-        // Check if user has permission to access the saved section
-        if (lastSection === 'accounts') {
-          // For accounts section, check if user is admin
-          if (currentUserRole === 'admin') {
-            setSection(lastSection);
-            // Update navigation to show correct active state
-            updateNavigationActiveState(lastSection);
-          } else {
-            // User doesn't have permission, default to home
-            setSection('home');
-            updateNavigationActiveState('home');
-          }
-        } else {
-          // For other sections, user has permission
-          setSection(lastSection);
-          updateNavigationActiveState(lastSection);
-        }
-      } else {
-        // No saved section or invalid section, default to home
-        setSection('home');
-        updateNavigationActiveState('home');
-      }
-      
-      // Update KPIs if we're on the home section
-      const currentSection = localStorage.getItem('lastActiveSection');
-      if (currentSection === 'home' || !currentSection) {
-        updateKpis();
-      }
-    };
-
-    // Function to update navigation active state
     const updateNavigationActiveState = (sectionKey) => {
       document.querySelectorAll('.admin-nav .nav-link').forEach(btn => {
         btn.classList.remove('active');
@@ -2189,13 +1986,11 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // KPIs from loaded table rows (basic client-side computation)
     function updateKpis() {
       const rows = Array.from(document.querySelectorAll('#playerTable tbody tr'));
       const total = rows.length;
       let male = 0, female = 0;
       rows.forEach(r => {
-        // Count by gender from data attribute
         const gender = r.getAttribute('data-gender') || '';
         if (gender.toUpperCase() === 'MALE') {
           male++;
@@ -2208,18 +2003,14 @@ document.addEventListener('DOMContentLoaded', () => {
       setText('kpiMale', male);
       setText('kpiFemale', female);
     }
-    // Recompute when players load
     setTimeout(updateKpis, 800);
     
-    // Load recent history
     loadRecentHistory();
     
-    // Load accounts on initial page load
     setTimeout(() => {
       loadAccounts();
     }, 1000);
     
-    // Function to load recent history
     async function loadRecentHistory() {
       try {
         const response = await fetch(`${API_BASE}/activity/recent?limit=10`, {
@@ -2231,15 +2022,12 @@ document.addEventListener('DOMContentLoaded', () => {
           const data = await response.json();
           displayRecentHistory(data.activities || []);
         } else if (response.status === 401) {
-          // Silently handle 401 - user not authenticated, checkAuth will handle redirect
           displayRecentHistory([]);
         } else {
-          // Only log non-auth errors
           console.error('Failed to load recent history:', response.status);
           displayRecentHistory([]);
         }
       } catch (error) {
-        // Only log network errors, not auth failures
         if (error.message && !error.message.includes('401')) {
           console.error('Error loading recent history:', error);
         }
@@ -2247,7 +2035,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     
-    // Function to display recent history
     function displayRecentHistory(activities) {
       const container = document.getElementById('recentHistory');
       if (!container) return;
@@ -2277,7 +2064,6 @@ document.addEventListener('DOMContentLoaded', () => {
       container.innerHTML = historyHTML;
     }
     
-    // Helper function to get time ago
     function getTimeAgo(timestamp) {
       const now = new Date();
       const activityTime = new Date(timestamp);
@@ -2297,7 +2083,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     
-    // Helper function to get role icon
     function getRoleIcon(role) {
       switch (role) {
         case 'admin': return 'A';
@@ -2307,7 +2092,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     
-    // Function to log activity
     async function logActivity(activity, details = '') {
       try {
         await fetch(`${API_BASE}/activity/log`, {
@@ -2326,7 +2110,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // --- Export/Import Functionality ---
     function attachExportListeners() {
       const exportExcelBtn = document.getElementById('exportExcelBtn');
       const importExcelBtn = document.getElementById('importExcelBtn');
@@ -2357,7 +2140,6 @@ document.addEventListener('DOMContentLoaded', () => {
               document.body.removeChild(a);
               console.log('Excel export completed');
               
-              // Log activity
               await logActivity('exported players data to Excel', `File: players_export_${new Date().toISOString().split('T')[0]}.xlsx`);
               loadRecentHistory(); // Refresh recent history
             } else {
@@ -2369,11 +2151,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 errorMessage = error.message || errorMessage;
                 console.error('Export error details:', error);
                 
-                // Handle authentication errors specifically
                 if (response.status === 401) {
                   errorMessage = 'Your session has expired. Please log in again.';
                   showWarning(errorMessage);
-                  // Show login modal instead of redirecting
                   if (loginModal) {
                     loginModal.classList.remove('hidden');
                   } else if (!window.location.pathname.endsWith('index.html')) {
@@ -2401,7 +2181,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       if (importExcelBtn) {
-        // Create hidden file input
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = '.xlsx,.xls';
@@ -2418,14 +2197,12 @@ document.addEventListener('DOMContentLoaded', () => {
           const file = event.target.files[0];
           if (!file) return;
 
-          // Validate file type
           const allowedTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
           if (!allowedTypes.includes(file.type)) {
             showWarning('Please select a valid Excel file (.xlsx or .xls)');
             return;
           }
 
-          // Validate file size (max 10MB)
           if (file.size > 10 * 1024 * 1024) {
             showWarning('File size must be less than 10MB');
             return;
@@ -2436,7 +2213,6 @@ document.addEventListener('DOMContentLoaded', () => {
             importExcelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importing...';
             importExcelBtn.disabled = true;
 
-            // Check session before import
             console.log('Checking session before import...');
             const sessionCheck = await fetch(`${API_BASE}/auth/me`, {
               credentials: 'include',
@@ -2447,7 +2223,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!sessionCheck.ok) {
               console.log('Session invalid, aborting import');
               showWarning('Your session has expired. Please log in again.');
-              // Show login modal instead of redirecting
               if (loginModal) {
                 loginModal.classList.remove('hidden');
               } else if (!window.location.pathname.endsWith('index.html')) {
@@ -2483,11 +2258,9 @@ document.addEventListener('DOMContentLoaded', () => {
               
               showInfo(message);
               
-              // Log activity
               await logActivity('imported players data from Excel', `Imported: ${imported}, Updated: ${updated}, Errors: ${errors}`);
               loadRecentHistory(); // Refresh recent history
               
-              // Refresh the players table
               loadPlayers();
             } else {
               console.error('Import failed with status:', response.status);
@@ -2498,11 +2271,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 errorMessage = error.message || errorMessage;
                 console.error('Import error details:', error);
                 
-                // Handle authentication errors specifically
                 if (response.status === 401) {
                   errorMessage = 'Your session has expired. Please log in again.';
                   showWarning(errorMessage);
-                  // Show login modal instead of redirecting
                   if (loginModal) {
                     loginModal.classList.remove('hidden');
                   } else if (!window.location.pathname.endsWith('index.html')) {
@@ -2525,19 +2296,16 @@ document.addEventListener('DOMContentLoaded', () => {
           } finally {
             importExcelBtn.innerHTML = '<i class="fas fa-file-import"></i> Import Excel';
             importExcelBtn.disabled = false;
-            // Clear the file input
             fileInput.value = '';
           }
         });
       }
     }
 
-    // --- Edit/Delete Logic ---
     window.attachEditDeleteListeners = function() {
       document.querySelectorAll('.btn-edit').forEach(btn => {
         btn.addEventListener('click', async () => {
           const id = btn.getAttribute('data-id');
-          // Fetch player data
           const res = await fetch(`${API_BASE}/player/${id}`);
           if (res.ok) {
             const player = await res.json();
@@ -2547,7 +2315,6 @@ document.addEventListener('DOMContentLoaded', () => {
             playerForm.birthdate.value = player.birthdate ? player.birthdate.slice(0,10) : '';
             if (playerForm.gender) { playerForm.gender.value = player.gender || ''; }
             if (playerForm.team) { playerForm.team.value = player.team || ''; }
-            // No text field for photo URL now
             playerForm.address.value = player.address || '';
             playerForm.contactNumber.value = player.contactNumber || '';
             playerForm.lastPromotionExam.value = player.lastPromotionExam ? player.lastPromotionExam.slice(0,10) : '';
@@ -2581,9 +2348,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
     };
-    // --- End Edit/Delete Logic ---
 
-    // Details panel
     function showDetails(player) {
       const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v || '-'; };
       const photo = document.getElementById('detailPhoto'); if (photo) photo.src = player.photoUrl || '';
@@ -2610,7 +2375,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Theme toggle (persists)
   const themeToggle = document.getElementById('themeToggle');
   const savedTheme = localStorage.getItem('THEME');
   if (savedTheme === 'dark') document.body.classList.add('theme-dark');
@@ -2621,14 +2385,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-// Hamburger / Sidebar toggle for both client-side and admin pages
 const navToggle = document.getElementById('ptaNavbarToggle');
 const navMenu = document.getElementById('ptaNavMenu');
 const adminShell = document.querySelector('.admin-shell');
 const adminSidebar = document.querySelector('.admin-sidebar');
 const headerEl = document.querySelector('.pta-navbar');
 
-// Client-side sidebar elements
 const clientSidebar = document.getElementById('clientSidebar');
 const sidebarOverlay = document.getElementById('sidebarOverlay');
 const sidebarClose = document.getElementById('sidebarClose');
@@ -2645,14 +2407,12 @@ if (navToggle) {
   navToggle.addEventListener('click', (e) => {
     e.stopPropagation();
     
-    // Handle client-side sidebar
     if (clientSidebar && !adminShell) {
       clientSidebar.classList.toggle('open');
       if (sidebarOverlay) sidebarOverlay.classList.toggle('active');
       navToggle.classList.toggle('active');
     }
     
-    // Handle admin sidebar
     if (adminShell && adminSidebar) {
       adminShell.classList.toggle('sidebar-open');
       navToggle.classList.toggle('active');
@@ -2660,7 +2420,6 @@ if (navToggle) {
   });
 }
 
-// Close client-side sidebar
 if (sidebarClose) {
   sidebarClose.addEventListener('click', () => {
     if (clientSidebar) clientSidebar.classList.remove('open');
@@ -2669,7 +2428,6 @@ if (sidebarClose) {
   });
 }
 
-// Close sidebar when clicking overlay
 if (sidebarOverlay) {
   sidebarOverlay.addEventListener('click', () => {
     if (clientSidebar) clientSidebar.classList.remove('open');
@@ -2678,7 +2436,6 @@ if (sidebarOverlay) {
   });
 }
 
-// Close sidebar when navigation links are clicked
 if (clientSidebar && !adminShell) {
   const sidebarLinks = clientSidebar.querySelectorAll('a.sidebar-link');
   sidebarLinks.forEach(link => {
@@ -2689,11 +2446,9 @@ if (clientSidebar && !adminShell) {
     });
   });
   
-  // Close sidebar when action buttons are clicked
   const sidebarButtons = clientSidebar.querySelectorAll('a.btn-sidebar');
   sidebarButtons.forEach(button => {
     button.addEventListener('click', (e) => {
-      // Add a small delay to allow the modal to open first
       setTimeout(() => {
         clientSidebar.classList.remove('open');
         if (sidebarOverlay) sidebarOverlay.classList.remove('active');
@@ -2703,9 +2458,7 @@ if (clientSidebar && !adminShell) {
   });
 }
 
-// Close on outside click
 document.addEventListener('click', (e) => {
-  // Handle client-side sidebar
   if (clientSidebar && !adminShell) {
     if (clientSidebar.classList.contains('open')) {
       const insideSidebar = e.target.closest && e.target.closest('#clientSidebar');
@@ -2718,7 +2471,6 @@ document.addEventListener('click', (e) => {
     }
   }
   
-  // Handle admin sidebar
   if (adminShell && adminSidebar) {
   if (!adminShell.classList.contains('sidebar-open')) return;
   const insideSidebar = e.target.closest && e.target.closest('.admin-sidebar');
@@ -2730,39 +2482,32 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Close on ESC
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    // Handle client-side sidebar
     if (clientSidebar && clientSidebar.classList.contains('open') && !adminShell) {
       clientSidebar.classList.remove('open');
       if (sidebarOverlay) sidebarOverlay.classList.remove('active');
       if (navToggle) navToggle.classList.remove('active');
     }
     
-    // Handle admin sidebar
     if (adminShell && adminShell.classList.contains('sidebar-open')) {
     adminShell.classList.remove('sidebar-open');
     if (navToggle) navToggle.classList.remove('active');
   }
   }
 
-  // Check Another Player Sliding Container Functions
   function showCheckPlayerContainer() {
     console.log('showCheckPlayerContainer called');
     const container = document.getElementById('checkPlayerContainer');
     console.log('Container found:', !!container);
     if (container) {
-      // Force display and remove any conflicting classes
       container.style.display = 'flex';
       container.classList.remove('hidden');
       container.classList.add('show');
       console.log('Container show class added, display set to flex');
       
-      // Force a reflow to ensure the transition works
       container.offsetHeight;
       
-      // Double-check after a short delay
       setTimeout(() => {
         console.log('Container classes after show:', container.className);
         console.log('Container computed style display:', window.getComputedStyle(container).display);
@@ -2781,7 +2526,6 @@ document.addEventListener('keydown', (e) => {
       container.classList.remove('show');
       console.log('Container show class removed');
       
-      // Hide after transition completes
       setTimeout(() => {
         if (!container.classList.contains('show')) {
           container.style.display = 'none';
@@ -2790,24 +2534,18 @@ document.addEventListener('keydown', (e) => {
     }
   }
 
-  // Add event listeners for Check Another Player functionality
-  // Only run on pages that have these elements (e.g., player profile page)
   function attachCheckPlayerListeners() {
     const checkAnotherPlayerBtn = document.getElementById('checkAnotherPlayerBtn');
     const checkPlayerClose = document.getElementById('checkPlayerClose');
     const checkPlayerContainer = document.getElementById('checkPlayerContainer');
 
-    // Only proceed if at least the container exists (page has this feature)
     if (!checkPlayerContainer) {
-      // Silently return if elements don't exist (not an error, just not on this page)
       return;
     }
 
-    // Only log if we're actually attaching listeners
     console.log('Attaching Check Player listeners for player profile page...');
 
     if (checkAnotherPlayerBtn) {
-      // Remove any existing listeners first
       checkAnotherPlayerBtn.removeEventListener('click', showCheckPlayerContainer);
       checkAnotherPlayerBtn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -2838,17 +2576,14 @@ document.addEventListener('keydown', (e) => {
     }
   }
 
-  // Attach listeners once DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', attachCheckPlayerListeners);
   } else {
     attachCheckPlayerListeners();
   }
 
-  // Attach form listener separately
   function attachFormListener() {
     const checkPlayerForm = document.getElementById('checkPlayerForm');
-    // Only attach if form exists (on player profile page)
     if (checkPlayerForm) {
     checkPlayerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -2862,13 +2597,11 @@ document.addEventListener('keydown', (e) => {
       }
 
       try {
-        // Show loading state
         const submitBtn = checkPlayerForm.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
         submitBtn.disabled = true;
 
-        // Search for player
         console.log('Searching for player with NCC Ref:', nccRef);
         const searchUrl = `${API_BASE}/player/search?nccRef=${encodeURIComponent(nccRef)}`;
         console.log('Search URL:', searchUrl);
@@ -2878,7 +2611,6 @@ document.addEventListener('keydown', (e) => {
         if (response.ok) {
           const player = await response.json();
           
-          // Display result
           const resultDiv = document.getElementById('checkPlayerResult');
           if (resultDiv) {
             resultDiv.innerHTML = `
@@ -2917,7 +2649,6 @@ document.addEventListener('keydown', (e) => {
           `;
         }
       } finally {
-        // Reset button state
         const submitBtn = checkPlayerForm.querySelector('button[type="submit"]');
         submitBtn.innerHTML = '<i class="fas fa-search"></i> Search Player';
         submitBtn.disabled = false;
@@ -2926,14 +2657,12 @@ document.addEventListener('keydown', (e) => {
     }
   }
 
-  // Attach form listener only if form exists
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', attachFormListener);
   } else {
     attachFormListener();
   }
 
-  // Use event delegation for Check Another Player button (only works if button exists)
   document.addEventListener('click', (e) => {
     if (e.target && e.target.id === 'checkAnotherPlayerBtn') {
       e.preventDefault();
@@ -2942,13 +2671,11 @@ document.addEventListener('keydown', (e) => {
     }
   });
 
-  // Test function to verify container works
   window.testCheckPlayer = function() {
     console.log('Testing Check Player Container...');
     showCheckPlayerContainer();
   };
 
-  // Hide Check Stats button on player profile page
   function hideCheckStatsButton() {
     const checkStatsButton = document.querySelector('.pta-navbar-buttons');
     if (checkStatsButton) {
@@ -2957,12 +2684,10 @@ document.addEventListener('keydown', (e) => {
     }
   }
 
-  // Hide the button immediately if we're on player profile page
   if (document.querySelector('.profile-page')) {
     hideCheckStatsButton();
   }
 
-  // Also hide it when the page loads completely
   window.addEventListener('load', () => {
     if (document.querySelector('.profile-page')) {
       hideCheckStatsButton();
