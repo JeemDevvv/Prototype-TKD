@@ -100,6 +100,49 @@ function showInfo(message, duration = 4000) {
   return showToast(message, 'info', duration);
 }
 
+function showConfirmationToast(message) {
+  return new Promise((resolve) => {
+    const container = createToastContainer();
+    const toast = document.createElement('div');
+    toast.className = 'confirmation-toast';
+    toast.innerHTML = `
+      <div class="confirmation-toast-icon">⚠️</div>
+      <div class="confirmation-toast-content">
+        <div class="confirmation-toast-message">${message}</div>
+        <div class="confirmation-toast-actions">
+          <button class="confirmation-toast-btn cancel">Cancel</button>
+          <button class="confirmation-toast-btn confirm">Delete</button>
+        </div>
+      </div>
+    `;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.classList.add('show');
+    }, 10);
+    
+    const handleConfirm = () => {
+      toast.classList.add('hiding');
+      setTimeout(() => {
+        toast.remove();
+        resolve(true);
+      }, 300);
+    };
+    
+    const handleCancel = () => {
+      toast.classList.add('hiding');
+      setTimeout(() => {
+        toast.remove();
+        resolve(false);
+      }, 300);
+    };
+    
+    toast.querySelector('.confirmation-toast-btn.confirm').addEventListener('click', handleConfirm);
+    toast.querySelector('.confirmation-toast-btn.cancel').addEventListener('click', handleCancel);
+  });
+}
+
 function getSocketUrl() {
   try {
     const hostname = window.location.hostname;
@@ -222,8 +265,9 @@ function handlePlayerCreated(player) {
   tr.setAttribute('data-id', player._id);
   tr.setAttribute('data-team', playerTeam);
   tr.setAttribute('data-gender', player.gender || '');
+  const computedNccRef = player.nccRef || (player.name ? generateNccRef(player.name) : null) || '-';
   tr.innerHTML = `
-    <td>${player.nccRef || '-'}</td>
+    <td>${computedNccRef}</td>
     <td>${player.name || '-'}</td>
     <td>${playerTeam || '-'}</td>
     <td>${player.beltRank || '-'}</td>
@@ -292,8 +336,9 @@ function handlePlayerUpdated(player) {
       tr.setAttribute('data-id', player._id);
       tr.setAttribute('data-team', playerTeam);
       tr.setAttribute('data-gender', player.gender || '');
+      const computedNccRef = player.nccRef || (player.name ? generateNccRef(player.name) : null) || '-';
       tr.innerHTML = `
-        <td>${player.nccRef || '-'}</td>
+        <td>${computedNccRef}</td>
         <td>${player.name || '-'}</td>
         <td>${playerTeam || '-'}</td>
         <td>${player.beltRank || '-'}</td>
@@ -777,7 +822,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const surname = nameParts[nameParts.length - 1];
     const lastThreeLetters = surname.slice(-3).toUpperCase();
     
-    const uniqueNumber = Date.now().toString().slice(-6);
+    const uniqueNumber = Math.floor(1000000 + Math.random() * 9000000).toString();
     
     return `${lastThreeLetters}${uniqueNumber}`;
   }
@@ -1571,8 +1616,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             filteredPlayers.forEach(player => {
               const tr = document.createElement('tr');
+              const computedNccRef = player.nccRef || (player.name ? generateNccRef(player.name) : null) || '-';
               tr.innerHTML = `
-                <td>${player.nccRef}</td>
+                <td>${computedNccRef}</td>
                 <td>${player.name}</td>
                 <td>${player.team || '-'}</td>
                 <td>${player.beltRank}</td>
@@ -2313,7 +2359,8 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.btn-delete').forEach(btn => {
         btn.addEventListener('click', async () => {
           const id = btn.getAttribute('data-id');
-          if (confirm('Are you sure you want to delete this player?')) {
+          const confirmed = await showConfirmationToast('Are you sure you want to delete this player?');
+          if (confirmed) {
             const res = await fetch(`${API_BASE}/player/${id}`, {
               method: 'DELETE',
               credentials: 'include'

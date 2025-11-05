@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Player Profile | ARISE</title>
   <link rel="stylesheet" href="../css/styles.css">
+  <link rel="icon" href="../public/arise.png">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-  <!-- Navbar -->
+
   <header class="pta-navbar">
     <div class="pta-navbar-content">
       <div class="pta-navbar-left">
@@ -20,17 +21,16 @@
         <span></span>
       </button>
       <div class="pta-navbar-right" id="ptaNavMenu">
-        <a href="index.html" class="pta-nav-link">Home</a>
-        <a href="#about" class="pta-nav-link">Achievements</a>
-        <a href="#competitions" class="pta-nav-link">About Us</a>
+        <a href="/" class="pta-nav-link">Home</a>
+        <a href="/achievements" class="pta-nav-link">Achievements</a>
+        <a href="/about" class="pta-nav-link">About Us</a>
         <div class="pta-navbar-buttons">
-          <a href="check-stats.html" class="btn btn-nav">Check Stats</a>
+          <a href="/check-stats" class="btn btn-nav">Check Stats</a>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Client-side Sidebar -->
   <aside class="client-sidebar" id="clientSidebar">
     <div class="sidebar-header">
       <img src="../public/arise.png" alt="PTA Logo" class="sidebar-logo">
@@ -39,20 +39,20 @@
       </button>
     </div>
     <nav class="sidebar-nav">
-      <a href="index.html" class="sidebar-link">
+      <a href="/" class="sidebar-link">
         <i class="fas fa-home"></i>
         Home
       </a>
-      <a href="achievements.html" class="sidebar-link">
+      <a href="/achievements" class="sidebar-link">
         <i class="fas fa-trophy"></i>
         Achievements
       </a>
-      <a href="about.html" class="sidebar-link">
+      <a href="/about" class="sidebar-link">
         <i class="fas fa-info-circle"></i>
         About Us
       </a>
       <div class="sidebar-buttons">
-        <a href="check-stats.html" class="btn btn-sidebar">
+        <a href="/check-stats" class="btn btn-sidebar">
           <i class="fas fa-chart-line"></i>
           Check Stats
         </a>
@@ -60,10 +60,8 @@
     </nav>
   </aside>
 
-  <!-- Sidebar Overlay -->
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-  <!-- Loading Screen -->
   <div id="loadingScreen" class="loading-screen">
     <div class="loading-spinner">
       <div class="spinner"></div>
@@ -71,9 +69,8 @@
     </div>
   </div>
 
-  <!-- Main Profile Container -->
   <main class="profile-page">
-    <!-- Hero Section -->
+
     <section class="profile-hero">
       <div class="hero-background"></div>
       <div class="hero-content">
@@ -108,10 +105,9 @@
       </div>
     </section>
 
-    <!-- Profile Content -->
     <section class="profile-content">
       <div class="profile-grid">
-        <!-- Personal Information Card -->
+
         <div class="profile-card personal-info-card">
           <div class="card-header">
             <h3><i class="fas fa-user-circle"></i> Personal Information</h3>
@@ -138,7 +134,6 @@
           </div>
         </div>
 
-        <!-- Belt & Training Card -->
         <div class="profile-card belt-card">
           <div class="card-header">
             <h3><i class="fas fa-medal"></i> Belt & Training</h3>
@@ -169,7 +164,6 @@
           </div>
         </div>
 
-        <!-- Competition Stats Card -->
         <div class="profile-card stats-card">
           <div class="card-header">
             <h3><i class="fas fa-trophy"></i> Competition Statistics</h3>
@@ -198,25 +192,21 @@
             <div class="competitions-list">
               <label>Recent Competitions</label>
               <div id="competitionsList" class="competitions-tags">
-                <!-- Competition tags will be loaded here -->
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Achievements Card -->
         <div class="profile-card achievements-card">
           <div class="card-header">
             <h3><i class="fas fa-award"></i> Achievements</h3>
           </div>
           <div class="card-content">
             <div id="achievementsList" class="achievements-list">
-              <!-- Achievements will be loaded here -->
             </div>
           </div>
         </div>
 
-        <!-- Self-Defense Card -->
         <div class="profile-card self-defense-card">
           <div class="card-header">
             <h3><i class="fas fa-shield-alt"></i> Self-Defense Requirements</h3>
@@ -225,7 +215,6 @@
             <div class="self-defense-content">
               <p class="self-defense-description">Specific forms needed to perform at self-defense for next promotion:</p>
               <div id="selfDefenseForms" class="self-defense-forms">
-                <!-- Self-defense forms will be loaded here -->
               </div>
             </div>
           </div>
@@ -233,7 +222,6 @@
       </div>
     </section>
 
-    <!-- Action Buttons -->
     <section class="profile-actions">
       <div class="action-buttons">
         <button class="action-btn outline" id="checkAnotherPlayerBtn">
@@ -243,7 +231,6 @@
       </div>
     </section>
 
-    <!-- Check Another Player Sliding Container -->
     <div id="checkPlayerContainer" class="check-player-container">
       <div class="check-player-content">
         <button class="check-player-close" id="checkPlayerClose">
@@ -259,13 +246,12 @@
     </div>
   </main>
 
-  <!-- Error Message -->
   <div id="errorMessage" class="error-message hidden">
     <div class="error-content">
       <i class="fas fa-exclamation-triangle"></i>
       <h3>Profile Not Found</h3>
       <p>We couldn't find a player profile with that NCC Reference number.</p>
-      <a href="check-stats.html" class="btn btn-primary">Try Again</a>
+      <a href="/check-stats" class="btn btn-primary">Try Again</a>
     </div>
   </div>
 
@@ -285,9 +271,9 @@
       </div>
       <div class="pta-footer-col">
         <div class="pta-footer-title">Quick Links</div>
-        <a href="#" class="pta-footer-link">Home</a>
-        <a href="#achievements" class="pta-footer-link">Achievements</a>
-        <a href="about.html" class="pta-footer-link">About Us</a>
+        <a href="/" class="pta-footer-link">Home</a>
+        <a href="/achievements" class="pta-footer-link">Achievements</a>
+        <a href="/about" class="pta-footer-link">About Us</a>
       </div>
       <div class="pta-footer-col">
         <div class="pta-footer-title">Follow us</div>
@@ -301,6 +287,6 @@
   </footer>
 
   <script src="../js/main.js"></script>
-  <link rel="icon" href="../public/logo.jpg">
+  
 </body>
-</html> 
+</html>

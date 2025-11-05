@@ -23,7 +23,7 @@ services:
     env: static
     plan: free
     buildCommand: echo "Frontend files ready"
-    staticPublishPath: ./frontend
+    staticPublishPath: .
     routes:
       # Proxy API calls to backend
       - type: rewrite

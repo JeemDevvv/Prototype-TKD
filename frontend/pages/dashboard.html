@@ -6,13 +6,14 @@
   <title>Admin Dashboard | ARISE</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="../css/styles.css?v=2">
+  <link rel="icon" href="../public/arise.png">
   <style>
-    /* Force responsive layout for all screen sizes */
+
     * { box-sizing: border-box !important; }
     
     @media (max-width: 1200px) {
       .admin-shell { grid-template-columns: 1fr !important; }
-      /* Keep sidebar available for off-canvas behavior; do not hide it */
+      
       .admin-main { width: 100vw !important; max-width: 100vw !important; padding: 0.5rem !important; margin: 0 !important; }
       .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; width: 100% !important; }
       .dash-grid { grid-template-columns: 1fr !important; width: 100% !important; }
@@ -33,7 +34,6 @@
   </style>
 </head>
 <body class="admin-dashboard">
-  <!-- Navbar -->
   <header class="pta-navbar">
     <div class="pta-navbar-content">
       <div class="pta-navbar-left">
@@ -165,7 +165,6 @@
 
       <section id="sec-accounts" class="section">
         <div class="accounts-container">
-          <!-- Header -->
           <div class="accounts-header">
             <h2 class="accounts-title">Accounts Management</h2>
             <button id="addAccountBtn" class="btn btn-primary accounts-add-btn">
@@ -174,7 +173,6 @@
             </button>
           </div>
 
-          <!-- Search and Filter -->
           <div class="accounts-filters">
             <div class="search-container">
               <input type="text" id="accountSearch" placeholder="Search accounts..." class="search-input">
@@ -218,18 +216,14 @@
     </section>
   </main>
 
-    <!-- Add/Edit Player Modal (hidden by default) -->
     <div id="playerModal" class="modal hidden">
       <form id="playerForm">
-        <!-- 1. Attach Photo -->
         <input type="file" id="photoFile" name="photoFile" accept="image/*" placeholder="Attach Photo">
         <div style="margin:0.5rem 0 1rem 0; display:flex; align-items:center; gap:0.8rem;">
           <img id="photoPreview" alt="Preview" style="width:100px; height:100px; object-fit:cover; border-radius:0.6rem; background:#eee; display:none;" />
           <small id="photoHint" style="color:#666;">PNG/JPG up to 2MB</small>
         </div>
-        <!-- 2. Full Name -->
         <input type="text" name="name" placeholder="Full Name" required>
-        <!-- Team field (required, placed after Full Name) -->
         <div style="position: relative; width: 100%; margin-bottom: 1rem;">
           <select name="team" required style="width: 100%; padding: 0.75rem; padding-right: 2.5rem; border: 1px solid #ddd; border-radius: 0.375rem; font-size: 1rem; background-color: white; appearance: none; margin: 0;">
             <option value="">Select Team</option>
@@ -241,7 +235,6 @@
           </select>
           <i class="fa-solid fa-caret-down" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); pointer-events: none; color: #666; font-size: 0.875rem;"></i>
         </div>
-        <!-- 3. Gender -->
         <div style="position: relative; width: 100%;">
           <select name="gender" required style="width: 100%; padding: 0.75rem; padding-right: 2.5rem; border: 1px solid #ddd; border-radius: 0.375rem; font-size: 1rem; background-color: white; appearance: none; margin: 0;">
             <option value="">Select Gender</option>
@@ -250,28 +243,18 @@
           </select>
           <i class="fa-solid fa-caret-down" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); pointer-events: none; color: #666; font-size: 0.875rem;"></i>
         </div>
-        <!-- 4. BirthDate -->
         <input type="date" name="birthdate" placeholder="Birthdate">
-        <!-- 5. Address -->
         <input type="text" name="address" placeholder="Address">
-        <!-- 6. Phone Number -->
         <input type="text" name="contactNumber" placeholder="Phone Number">
-        <!-- 7. Current belt -->
         <input type="text" name="beltRank" placeholder="Current Belt" required>
-        <!-- 8. Last promotion exam -->
         <input type="date" name="lastPromotionExam" placeholder="Last Promotion Exam">
-        <!-- 9. Next belt -->
         <input type="text" name="nextBelt" placeholder="Next Belt">
-        <!-- 10. Required forms -->
         <textarea id="requiredForms" name="requiredForms" placeholder="Specific forms needed to perform at self-defense" rows="3" maxlength="280"></textarea>
         <div style="text-align:right; font-size:0.9rem; color:#666; margin-top:-0.4rem; margin-bottom:0.6rem;">
           <span id="formsCounter">0/280</span>
         </div>
-        <!-- 11. Competition na sinalihan -->
         <input type="text" name="competitions" placeholder="Competition na sinalihan (comma separated)">
-        <!-- 12. Achievements -->
         <input type="text" name="achievements" placeholder="Achievements (comma separated)">
-        <!-- 13. NCC Ref Number -->
         <input type="text" name="nccRef" placeholder="NCC Ref Number">
         <button type="submit" class="btn">Save</button>
         <button type="button" id="closeModalBtn" class="btn btn-cancel">Cancel</button>
@@ -281,15 +264,13 @@
 
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="../js/main.js?v=2"></script>
-  <link rel="icon" href="../public/logo.jpg">
+  
 
   <script>
-    // Allow overriding API base via localStorage for this page
     window.setApiBase = function(url){ try { localStorage.setItem('API_BASE', url); if (typeof showSuccess === 'function') { showSuccess('API base set. Reload the page.'); } else { alert('API base set. Reload the page.'); } } catch(e) { if (typeof showError === 'function') { showError('Failed to set API base'); } else { alert('Failed to set API base'); } } };
-    // Example usage in console: setApiBase('http://localhost:4000/api')
+
   </script>
 
-  <!-- Reusable Check Stats Modal on Dashboard -->
   <div class="modal hidden" id="statsModal">
     <div class="check-stats-container" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
       <button id="closeStatsModal" class="stats-close" aria-label="Close">
@@ -312,7 +293,6 @@
     </div>
   </div>
 
-  <!-- Add/Edit Account Modal -->
   <div id="accountModal" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
@@ -365,7 +345,6 @@
     </div>
   </div>
 
-  <!-- Custom Notification Container -->
   <div id="notificationContainer" class="notification-container">
     <div id="notification" class="notification hidden">
       <div class="notification-content">
