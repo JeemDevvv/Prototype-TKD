@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const Admin = require('../models/Admin');
 const Coach = require('../models/Coach');
@@ -8,12 +8,10 @@ const { authLimiter } = require('../middleware/rateLimiter');
 const { sanitizeInput, validateRequired } = require('../middleware/validation');
 const { logAuthEvent, logSuspiciousActivity } = require('../middleware/securityLogger');
 
-// Support GET requests for login1 endpoint
 router.get('/login1', (req, res) => {
   res.status(200).json({ message: 'Login endpoint is available. Please use POST method for authentication.' });
 });
 
-// Handle typo in login endpoint
 router.post('/login1', 
   authLimiter,
   sanitizeInput,
@@ -24,7 +22,6 @@ router.post('/login1',
   let resolvedRole = null;
 
   try {
-      // Log login attempt
       logAuthEvent('LOGIN_ATTEMPT', req, { username, role });
 
     if (role === 'admin') {
@@ -57,13 +54,11 @@ router.post('/login1',
         return res.status(401).json({ message: 'Invalid Credentials' });
       }
 
-      // Set session with additional security data
     req.session.userId = user._id;
     req.session.role = resolvedRole;
       req.session.createdAt = Date.now();
       req.session.userStatus = 'active';
 
-      // Log successful login
       logAuthEvent('LOGIN_SUCCESS', req, { username, role, userId: user._id });
 
     res.json({ message: 'Login successful', role: resolvedRole });
@@ -74,12 +69,10 @@ router.post('/login1',
   }
 );
 
-// Support GET requests for login endpoint (for browser preflight/direct access)
 router.get('/login', (req, res) => {
   res.status(200).json({ message: 'Login endpoint is available. Please use POST method for authentication.' });
 });
 
-// Admin/Coach login
 router.post('/login', async (req, res) => {
   const { username, password, role } = req.body;
   let user = null;
@@ -107,13 +100,11 @@ router.post('/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ message: 'Invalid Credentials' });
     
-    // Set session with additional security data
     req.session.userId = user._id;
     req.session.role = resolvedRole;
     req.session.createdAt = Date.now();
     req.session.userStatus = 'active';
     
-    // Store team information for access control (for Coach and Assistant Coach)
     if (resolvedRole === 'coach' || resolvedRole === 'assistant') {
       req.session.team = user.team || null;
     } else {
@@ -127,7 +118,6 @@ router.post('/login', async (req, res) => {
       sessionId: req.sessionID
     });
     
-    // Explicitly save session to ensure cookie is set
     req.session.save((err) => {
       if (err) {
         console.error('Error saving session:', err);
@@ -142,7 +132,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Get current user session
 router.get('/me', async (req, res) => {
   try {
     console.log('=== /me endpoint called ===');
@@ -203,7 +192,6 @@ router.get('/me', async (req, res) => {
   }
 });
 
-// Admin logout
 router.post('/logout', (req, res) => {
   req.session.destroy(() => {
     res.json({ message: 'Logged out' });

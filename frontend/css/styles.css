@@ -2547,9 +2547,19 @@ body:has(.profile-page) .pta-navbar-buttons,
   padding: 2rem;
   width: 100%;
   max-width: 380px;
-  animation: slideUp 0.8s ease-out;
   overflow: visible;
   position: relative;
+}
+
+/* Ensure animations trigger on open/close for both modals */
+.modal:not(.hidden) .login-card,
+.modal:not(.hidden) .check-stats-container {
+  animation: slideUp 0.8s ease-out;
+}
+
+.modal.closing .login-card,
+.modal.closing .check-stats-container {
+  animation: slideOutUp 0.4s ease-in forwards;
 }
 
 .login-header {

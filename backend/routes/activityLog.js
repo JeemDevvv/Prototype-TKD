@@ -1,9 +1,8 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const ActivityLog = require('../models/ActivityLog');
 const auth = require('../middleware/auth');
 
-// Get recent activity logs
 router.get('/recent', auth, async (req, res) => {
   try {
     console.log('Fetching recent activity logs');
@@ -30,7 +29,6 @@ router.get('/recent', auth, async (req, res) => {
   }
 });
 
-// Log a new activity
 router.post('/log', auth, async (req, res) => {
   try {
     const { activity, details = '' } = req.body;
@@ -42,7 +40,6 @@ router.post('/log', auth, async (req, res) => {
       });
     }
     
-    // Get user info from session
     const userId = req.session.userId;
     const userRole = req.session.role;
     
@@ -53,7 +50,6 @@ router.post('/log', auth, async (req, res) => {
       });
     }
     
-    // Determine user model and get user name
     let userModel, userName;
     
     if (userRole === 'admin') {
@@ -78,7 +74,6 @@ router.post('/log', auth, async (req, res) => {
       });
     }
     
-    // Create activity log
     const activityLog = new ActivityLog({
       userId: userId,
       userModel: userModel,
@@ -110,4 +105,3 @@ router.post('/log', auth, async (req, res) => {
 });
 
 module.exports = router;
-
