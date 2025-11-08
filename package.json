@@ -8,7 +8,10 @@
     "dev": "nodemon backend/app.js",
     "kill-port": "powershell -ExecutionPolicy Bypass -File ./kill-port.ps1",
     "dev-safe": "powershell -ExecutionPolicy Bypass -File ./kill-port.ps1 && timeout /t 1 /nobreak >nul && npm run dev",
-    "start-safe": "powershell -ExecutionPolicy Bypass -File ./kill-port.ps1 && timeout /t 1 /nobreak >nul && npm start"
+    "start-safe": "powershell -ExecutionPolicy Bypass -File ./kill-port.ps1 && timeout /t 1 /nobreak >nul && npm start",
+    "build": "node build.js",
+    "build-start": "npm run build && npm start",
+    "build-dev": "npm run build && npm run dev"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
