@@ -1,10 +1,11 @@
 services:
+  # Backend service - serves API and can also serve frontend with clean URLs
   - type: web
-    name: arisetaekwondo
+    name: prototype-tkd-backend
     env: node
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm run build-start
+    buildCommand: npm install
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -15,6 +16,38 @@ services:
       - key: SESSION_SECRET
         generateValue: true
     healthCheckPath: /api/health
+
+  # Frontend static site - serves static files with clean URL redirects
+  - type: web
+    name: arisetaekwondo
+    env: static
+    plan: free
+    buildCommand: echo "Frontend files ready"
+    staticPublishPath: .
+    routes:
+      # Proxy API calls to backend
+      - type: rewrite
+        source: /api/*
+        destination: https://prototype-tkd-backend.onrender.com/api/*
+      # Clean URL routes - rewrite to actual file paths
+      - type: rewrite
+        source: /
+        destination: /pages/index.html
+      - type: rewrite
+        source: /dashboard
+        destination: /pages/dashboard.html
+      - type: rewrite
+        source: /achievements
+        destination: /pages/achievements.html
+      - type: rewrite
+        source: /about
+        destination: /pages/about.html
+      - type: rewrite
+        source: /players
+        destination: /pages/player-profile.html
+      - type: rewrite
+        source: /accounts
+        destination: /pages/dashboard.html
       - type: rewrite
         source: /settings
         destination: /pages/dashboard.html

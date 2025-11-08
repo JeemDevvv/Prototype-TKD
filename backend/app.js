@@ -175,24 +175,23 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-const BUILD_DIR = path.join(__dirname, '..', 'build');
-const BUILD_PAGES = path.join(BUILD_DIR, 'pages');
+const FRONTEND_DIR = path.join(__dirname, '..', 'frontend');
+const FRONTEND_PAGES = path.join(FRONTEND_DIR, 'pages');
 
 if (process.env.NODE_ENV !== 'production') {
   const fs = require('fs');
-  console.log('Build directory:', BUILD_DIR);
-  console.log('Build pages directory:', BUILD_PAGES);
-  console.log('Build dir exists:', fs.existsSync(BUILD_DIR));
-  console.log('Build pages exists:', fs.existsSync(BUILD_PAGES));
+  console.log('Frontend directory:', FRONTEND_DIR);
+  console.log('Frontend pages directory:', FRONTEND_PAGES);
+  console.log('Frontend dir exists:', fs.existsSync(FRONTEND_DIR));
+  console.log('Frontend pages exists:', fs.existsSync(FRONTEND_PAGES));
 }
 
-// Serve static files from build directory only
-app.use('/css', express.static(path.join(BUILD_DIR, 'css')));
-app.use('/js', express.static(path.join(BUILD_DIR, 'js')));
-app.use('/public', express.static(path.join(BUILD_DIR, 'public')));
+app.use('/css', express.static(path.join(FRONTEND_DIR, 'css')));
+app.use('/js', express.static(path.join(FRONTEND_DIR, 'js')));
+app.use('/public', express.static(path.join(FRONTEND_DIR, 'public')));
 
 app.get('/', (req, res) => {
-  const indexPath = path.join(BUILD_PAGES, 'index.html');
+  const indexPath = path.join(FRONTEND_PAGES, 'index.html');
   res.sendFile(indexPath, (err) => {
     if (err) {
       console.error('Error sending index.html:', err);
@@ -202,7 +201,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/dashboard', (req, res) => {
-  res.sendFile(path.join(BUILD_PAGES, 'dashboard.html'), (err) => {
+  res.sendFile(path.join(FRONTEND_PAGES, 'dashboard.html'), (err) => {
     if (err) {
       console.error('Error sending dashboard.html:', err);
       res.status(500).send('Error loading page');
@@ -211,7 +210,7 @@ app.get('/dashboard', (req, res) => {
 });
 
 app.get('/achievements', (req, res) => {
-  res.sendFile(path.join(BUILD_PAGES, 'achievements.html'), (err) => {
+  res.sendFile(path.join(FRONTEND_PAGES, 'achievements.html'), (err) => {
     if (err) {
       console.error('Error sending achievements.html:', err);
       res.status(500).send('Error loading page');
@@ -220,7 +219,7 @@ app.get('/achievements', (req, res) => {
 });
 
 app.get('/players', (req, res) => {
-  res.sendFile(path.join(BUILD_PAGES, 'player-profile.html'), (err) => {
+  res.sendFile(path.join(FRONTEND_PAGES, 'player-profile.html'), (err) => {
     if (err) {
       console.error('Error sending player-profile.html:', err);
       res.status(500).send('Error loading page');
@@ -229,7 +228,7 @@ app.get('/players', (req, res) => {
 });
 
 app.get('/accounts', (req, res) => {
-  res.sendFile(path.join(BUILD_PAGES, 'dashboard.html'), (err) => {
+  res.sendFile(path.join(FRONTEND_PAGES, 'dashboard.html'), (err) => {
     if (err) {
       console.error('Error sending dashboard.html:', err);
       res.status(500).send('Error loading page');
@@ -238,7 +237,7 @@ app.get('/accounts', (req, res) => {
 });
 
 app.get('/settings', (req, res) => {
-  res.sendFile(path.join(BUILD_PAGES, 'dashboard.html'), (err) => {
+  res.sendFile(path.join(FRONTEND_PAGES, 'dashboard.html'), (err) => {
     if (err) {
       console.error('Error sending dashboard.html:', err);
       res.status(500).send('Error loading page');
@@ -247,7 +246,7 @@ app.get('/settings', (req, res) => {
 });
 
 app.get('/about', (req, res) => {
-  res.sendFile(path.join(BUILD_PAGES, 'about.html'), (err) => {
+  res.sendFile(path.join(FRONTEND_PAGES, 'about.html'), (err) => {
     if (err) {
       console.error('Error sending about.html:', err);
       res.status(500).send('Error loading page');
