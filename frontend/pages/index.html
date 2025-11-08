@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ARISE TKD</title>
   <link rel="stylesheet" href="../css/styles.css">
+  <link rel="icon" href="../public/arise.png">
 </head>
 <body>
  
@@ -12,15 +13,15 @@
   <header class="pta-navbar">
     <div class="pta-navbar-content">
       <div class="pta-navbar-left">
-        <img src="../public/logo.jpg" alt="Arise Logo" class="pta-logo">
+        <a href="https://www.facebook.com/ARISEtaekwondophil" target="_blank"><img src="../public/logo.jpg" alt="Arise Logo" class="pta-logo"></a>
       </div>
       <nav class="pta-navbar-right" id="ptaNavMenu">
         <a href="/" class="pta-nav-link active">Home</a>
-        <a href="/achievements" class="pta-nav-link">Achievements</a>
-        <a href="/about" class="pta-nav-link">About Us</a>
+        <a href="achievements.html" class="pta-nav-link">Achievements</a>
+        <a href="about.html" class="pta-nav-link">About Us</a>
         <div class="pta-navbar-buttons">
-          <a href="#" class="btn btn-nav js-open-stats">Check Stats</a>
-          <a href="#" class="btn btn-nav btn-login js-open-login">Login</a>
+          <a href="#" class="btn btn-nav js-open-stats"><i class="fas fa-chart-bar"></i> Check Stats</a>
+          <a href="#" class="btn btn-nav btn-login js-open-login"><i class="fas fa-sign-in-alt"></i> Login</a>
         </div>
       </nav>
       <button class="pta-navbar-toggle" id="ptaNavbarToggle" aria-label="Toggle navigation">
@@ -73,6 +74,7 @@
     </div>
   </section>
   <script>
+
     const heroImages = [
       '../public/group.png',
       '../public/group1.jpg',
@@ -88,7 +90,7 @@
         setTimeout(() => {
           heroSection.style.setProperty('--hero-bg', `url('${heroImages[idx]}')`);
           heroSection.classList.remove('pta-hero-fade');
-        }, 400);
+        }, 400); // fade out, then change, then fade in
       } else {
         heroSection.style.setProperty('--hero-bg', `url('${heroImages[idx]}')`);
       }
@@ -103,42 +105,33 @@
   <section class="trusted-logos-section">
     <div class="trusted-logos-title">Our Team:</div>
     <div class="trusted-logos-row">
-      <img src="../public/pta.jpg" alt="Pfizer" class="trusted-logo">
-      <img src="../public/earist.png" alt="Wforce" class="trusted-logo">
-      <img src="../public/arise.png" alt="Kforce" class="trusted-logo">
-      <img src="../public/tondo.jpg" alt="Siemens" class="trusted-logo">
-      <img src="../public/chrms.jpg" alt="Siemens" class="trusted-logo">
+      <a href="https://www.facebook.com/groups/459569279324878" target="_blank"><img src="../public/earist.png" alt="Wforce" class="trusted-logo"></a>
+      <a href="https://www.facebook.com/ARISEtaekwondophil" target="_blank"><img src="../public/arise.png" alt="Kforce" class="trusted-logo"></a>
+      <a href="https://www.facebook.com/TondoTaekwondo" target="_blank"><img src="../public/tondo.jpg" alt="Siemens" class="trusted-logo"></a>
+      <a href="https://www.facebook.com/CMRHStaekwondo" target="_blank"><img src="../public/chrms.jpg" alt="Siemens" class="trusted-logo"></a>
     </div>
   </section>
 
-  <section class="pta-events" id="coaches">
-    <h2>COACHES OF ARISE</h2>
-    <div class="pta-event-cards">
-      <div class="pta-event-card">
-        <img src="../public/rene.jpg" alt="Coach 1" class="pta-event-img">
-        <div class="pta-event-info">
-          <div class="pta-event-title">Coach Rene</div>
-          <div class="pta-event-date">Head Coach</div>
-          <img src="../public/uniform.png" alt="Taekwondo Uniform" class="pta-coach-icon" style="height: 44px; margin-top: 1.1rem;" />
-        </div>
+  <section class="professional-coaches" id="coaches">
+    <h2 class="coaches-section-title">OUR PROFESSIONAL COACHES</h2>
+    <div class="coaches-container">
+      <div class="coach-item">
+        <img src="../public/rene.jpg" alt="Coach Rene" class="coach-image">
+        <div class="coach-name">Coach Rene</div>
+        <div class="coach-position">Head Coach</div>
       </div>
-      <div class="pta-event-card">
-        <img src="../public/aldrin.jpg" alt="Coach 2" class="pta-event-img">
-        <div class="pta-event-info">
-          <div class="pta-event-title">Coach Aldrin</div>
-          <div class="pta-event-date">Kyorugi Coach</div>
-          <img src="../public/uniform.png" alt="Taekwondo Uniform" class="pta-coach-icon" style="height: 44px; margin-top: 1.1rem;" />
-        </div>
+      <div class="coach-item">
+        <img src="../public/aldrin.jpg" alt="Coach Aldrin" class="coach-image">
+        <div class="coach-name">Coach Aldrin</div>
+        <div class="coach-position">Kyorugi Coach</div>
       </div>
-      <div class="pta-event-card">
-        <img src="../public/vince.jpg" alt="Coach 3" class="pta-event-img">
-        <div class="pta-event-info">
-          <div class="pta-event-title">Coach Vince</div>
-          <div class="pta-event-date">Poomsae Coach</div>
-          <img src="../public/uniform.png" alt="Taekwondo Uniform" class="pta-coach-icon" style="height: 44px; margin-top: 1.1rem;" />
-        </div>
+      <div class="coach-item">
+        <img src="../public/vince.jpg" alt="Coach Vince" class="coach-image">
+        <div class="coach-name">Coach Vince</div>
+        <div class="coach-position">Poomsae Coach</div>
       </div>
     </div>
+    <a href="/about" class="view-all-coaches-btn">View Coaches About</a>
   </section>
 
   <footer class="pta-footer">
@@ -172,9 +165,9 @@
     </div>
   </footer>
 
-  <link rel="icon" href="../public/logo.jpg">
-  <script src="../js/main.js"></script>
   
+  <script src="../js/main.js"></script>
+
   <div class="modal hidden" id="statsModal">
     <div class="check-stats-container" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
       <button id="closeStatsModal" class="stats-close" aria-label="Close">X</button>
@@ -186,7 +179,7 @@
       <div id="searchResult" style="text-align: center;"></div>
     </div>
   </div>
-  
+
   <div class="modal hidden" id="loginModal">
     <div class="check-stats-container login-card" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
       <button id="closeLoginModal" class="stats-close" aria-label="Close">X</button>
@@ -227,4 +220,4 @@
     </div>
   </div>
 </body>
-</html> 
+</html>

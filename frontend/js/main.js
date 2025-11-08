@@ -1,4 +1,4 @@
-﻿function getApiBase() {
+function getApiBase() {
   const saved = localStorage.getItem('API_BASE');
   if (saved && /^https?:\/\//.test(saved)) return saved.replace(/\/$/, '');
   
