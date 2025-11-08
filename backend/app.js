@@ -23,7 +23,7 @@ const io = new Server(server, {
       } else if (/^https:\/\/.*\.(onrender|railway|vercel|netlify)\.(com|app)$/.test(origin)) {
         callback(null, true);
       } else {
-        callback(null, true); // Allow all for now
+        callback(null, true); 
       }
     },
     credentials: true
@@ -114,17 +114,17 @@ app.use(session({
   saveUninitialized: false,
   store: MongoStore.create({
     mongoUrl: process.env.MONGODB_URI,
-    touchAfter: 24 * 3600, // lazy session update
-    ttl: 24 * 60 * 60, // 24 hours in seconds
+    touchAfter: 24 * 3600, 
+    ttl: 24 * 60 * 60, 
     autoRemove: 'native'
   }),
   cookie: {
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    secure: process.env.NODE_ENV === 'production', // true for HTTPS in production
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    secure: process.env.NODE_ENV === 'production', 
+    maxAge: 24 * 60 * 60 * 1000, 
     httpOnly: true,
-    path: '/', // Ensure cookie is available for all paths
-    domain: undefined // Let browser set domain automatically
+    path: '/', 
+    domain: undefined 
   }
 }));
 
