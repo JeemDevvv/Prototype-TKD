@@ -563,11 +563,8 @@ document.addEventListener('DOMContentLoaded', () => {
           loginForm.reset();
         }
         
-        if (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/')) {
-          window.location.href = 'dashboard.html';
-        } else {
-          window.location.reload();
-        }
+        // Always redirect to dashboard after successful login
+        window.location.href = 'dashboard.html';
       } else {
         const errEl = document.getElementById('loginError');
         if (errEl) {
