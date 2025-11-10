@@ -186,15 +186,8 @@ if (process.env.NODE_ENV !== 'production') {
   console.log('Frontend pages exists:', fs.existsSync(FRONTEND_PAGES));
 }
 
-const setNoCacheHeaders = (req, res, next) => {
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-  next();
-};
-
-app.use('/css', setNoCacheHeaders, express.static(path.join(FRONTEND_DIR, 'css')));
-app.use('/js', setNoCacheHeaders, express.static(path.join(FRONTEND_DIR, 'js')));
+app.use('/css', express.static(path.join(FRONTEND_DIR, 'css')));
+app.use('/js', express.static(path.join(FRONTEND_DIR, 'js')));
 app.use('/public', express.static(path.join(FRONTEND_DIR, 'public')));
 
 app.get('/', (req, res) => {
