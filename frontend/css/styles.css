@@ -4912,55 +4912,139 @@ form button:hover, form button:focus {
 /* --- Grand Master & National Team Sections --- */
 .pta-grandmaster-section {
   background: linear-gradient(rgba(10,20,40,0.85), rgba(10,20,40,0.85)), url('../public/bgthird.jpg') center center/cover no-repeat;
-  padding: 4rem 1rem 3rem 1rem;
+  padding: 4rem 1rem;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 500px;
+  flex-direction: column;
+  gap: 4rem;
 }
-.pta-grandmaster-content {
+
+.pta-grandmaster-item {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 3rem;
-  max-width: 1100px;
+  max-width: 1200px;
   width: 100%;
-  flex-wrap: wrap;
-}
-.pta-grandmaster-text {
-  flex: 1 1 380px;
-  color: #fff;
-  text-align: left;
-  max-width: 520px;
-}
-.pta-grandmaster-text h2 {
-  font-size: 2rem;
-  font-weight: 700;
-  margin: 1.2rem 0 1rem 0;
-  letter-spacing: 1px;
-  color: #fff;
+  margin: 0 auto;
 }
 
-.pta-grandmaster-text p {
+.pta-grandmaster-item {
+  flex-direction: row;
+}
+
+.pta-grandmaster-text {
+  flex: 1 1 50%;
+  color: #fff;
+  text-align: left;
+  min-width: 300px;
+}
+
+.pta-grandmaster-text h2 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin: 1.2rem 0 0.5rem 0;
+  letter-spacing: 1px;
+  color: #fff;
+  text-align: center;
+}
+
+.coach-role {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #F1AE25;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+.pta-grandmaster-text p:not(.coach-role) {
   font-size: 1.05rem;
   color: #e0e0e0;
   line-height: 1.7;
+  margin-top: 0;
+  text-align: center;
 }
+
 .pta-grandmaster-img {
-  flex: 1 1 260px;
+  flex: 1 1 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 300px;
 }
+
 .pta-grandmaster-img img {
-  width: 260px;
-  max-width: 90vw;
+  width: 100%;
+  max-width: 450px;
+  height: 550px;
   border-radius: 1.2rem;
   box-shadow: 0 4px 24px rgba(0,0,0,0.18);
   object-fit: cover;
-  background: #fff;
-  padding: 0.5rem;
+  object-position: center;
 }
+
+@media (max-width: 900px) {
+  .pta-grandmaster-section {
+    padding: 3rem 1rem;
+    gap: 3rem;
+  }
+
+  .pta-grandmaster-item {
+    flex-direction: column !important;
+    gap: 2rem;
+  }
+
+  .pta-grandmaster-img {
+    order: 1;
+    min-width: unset;
+    width: 100%;
+  }
+
+  .pta-grandmaster-text {
+    order: 2;
+    min-width: unset;
+    text-align: center;
+  }
+
+  .pta-grandmaster-text h2 {
+    font-size: 1.8rem;
+  }
+
+  .coach-role {
+    font-size: 1.1rem;
+  }
+
+  .pta-grandmaster-img img {
+    width: 100%;
+    max-width: 400px;
+    height: 450px;
+  }
+}
+
+@media (max-width: 600px) {
+  .pta-grandmaster-section {
+    padding: 2rem 1rem;
+    gap: 2.5rem;
+  }
+
+  .pta-grandmaster-text h2 {
+    font-size: 1.5rem;
+  }
+
+  .coach-role {
+    font-size: 1rem;
+  }
+
+  .pta-grandmaster-text p:not(.coach-role) {
+    font-size: 0.95rem;
+  }
+
+  .pta-grandmaster-img img {
+    height: 400px;
+  }
+}  
+
 .pta-nationalteam-section {
   background: linear-gradient(rgba(10,20,40,0.85), rgba(10,20,40,0.85)), url('../public/group2.jpg') center center/cover no-repeat;
   height: 500px;
@@ -4986,17 +5070,7 @@ form button:hover, form button:focus {
   margin: 0 auto;
   line-height: 1.7;
 }
-@media (max-width: 900px) {
-  .pta-grandmaster-content {
-    flex-direction: column;
-    gap: 2rem;
-    padding: 0;
-  }
-  .pta-grandmaster-img img {
-    width: 80vw;
-    max-width: 320px;
-  }
-} 
+
 
 .pta-event-card {
   transition: 
@@ -6205,4 +6279,3 @@ body:not(.admin-dashboard) .pta-navbar-toggle {
     font-weight: 700;
   }
 }
-
