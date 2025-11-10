@@ -563,7 +563,6 @@ document.addEventListener('DOMContentLoaded', () => {
           loginForm.reset();
         }
         
-        // Always redirect to dashboard after successful login
         window.location.href = 'dashboard.html';
       } else {
         const errEl = document.getElementById('loginError');
