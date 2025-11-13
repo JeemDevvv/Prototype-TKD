@@ -782,6 +782,31 @@ document.addEventListener('DOMContentLoaded', () => {
           selfDefenseForms.classList.remove('empty');
         }
       }
+
+      const poomsaeFormsEl = document.getElementById('poomsaeForms');
+      if (poomsaeFormsEl) {
+        const poomsaeForms = player.poomsaeForms || '';
+        if (poomsaeForms && poomsaeForms.trim()) {
+          const forms = poomsaeForms.split('\n').filter(form => form.trim()).map(form => form.trim());
+          if (forms.length > 0) {
+            poomsaeFormsEl.innerHTML = forms.map(form => `
+              <div class="self-defense-form-item">
+                <div class="self-defense-form-icon">
+                  <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="self-defense-form-text">${form}</div>
+              </div>
+            `).join('');
+            poomsaeFormsEl.classList.remove('empty');
+          } else {
+            poomsaeFormsEl.innerHTML = '<div class="self-defense-form-item"><div class="self-defense-form-text">No specific forms required yet.</div></div>';
+            poomsaeFormsEl.classList.remove('empty');
+          }
+        } else {
+          poomsaeFormsEl.innerHTML = '<div class="self-defense-form-item"><div class="self-defense-form-text">No specific forms required yet.</div></div>';
+          poomsaeFormsEl.classList.remove('empty');
+        }
+      }
       
       const cards = document.querySelectorAll('.profile-card');
       cards.forEach((card, index) => {
@@ -2345,6 +2370,7 @@ document.addEventListener('DOMContentLoaded', () => {
             playerForm.achievements.value = Array.isArray(player.achievements) ? player.achievements.join(', ') : '';
             playerForm.competitions.value = (player.stats && Array.isArray(player.stats.competitions)) ? player.stats.competitions.join(', ') : '';
             playerForm.requiredForms.value = player.requiredForms || '';
+            if (playerForm.poomsaeForms) { playerForm.poomsaeForms.value = player.poomsaeForms || ''; }
             editingPlayerId = id;
             playerModal.classList.remove('hidden');
           } else {

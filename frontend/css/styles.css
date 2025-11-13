@@ -1661,26 +1661,27 @@ body.home-section .dash-greeting {
   overflow: hidden;
   word-wrap: break-word;
 }
-.details-head { 
-  display: flex; 
-  gap: 1rem; 
-  align-items: flex-start; 
-  flex-wrap: wrap;
+.details-head {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-direction: column;
 }
-.details-photo { 
-  width: 140px; 
-  height: 140px; 
-  object-fit: cover; 
-  border-radius: 0.8rem; 
-  background: #eee; 
+.details-photo {
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 0.8rem;
+  background: #eee;
   flex-shrink: 0;
+  margin: 0 auto 0.5rem;
 }
 .details-head h3 { 
   margin: 0 0 0.4rem 0; 
   word-wrap: break-word;
 }
 .details-head > div {
-  flex: 1;
+  width: 100%;
   min-width: 200px;
 }
 .kv { 
@@ -2244,6 +2245,14 @@ body.home-section .dash-greeting {
   min-height: 100px;
 }
 
+.poomsae-forms {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 12px;
+  padding: 1.5rem;
+  min-height: 100px;
+}
+
 .self-defense-forms.empty {
   display: flex;
   align-items: center;
@@ -2700,6 +2709,10 @@ body:has(.profile-page) .pta-navbar-buttons,
   }
   
   .self-defense-forms {
+    padding: 1rem;
+    min-height: 80px;
+  }
+  .poomsae-forms {
     padding: 1rem;
     min-height: 80px;
   }
@@ -5047,7 +5060,7 @@ form button:hover, form button:focus {
 
 .pta-nationalteam-section {
   background: linear-gradient(rgba(10,20,40,0.85), rgba(10,20,40,0.85)), url('../public/group2.jpg') center center/cover no-repeat;
-  height: 500px;
+  height: 750px;
   min-height: unset;
   display: flex;
   flex-direction: column;
@@ -5354,7 +5367,7 @@ body:not(.admin-dashboard) .pta-navbar-content {
 body:not(.admin-dashboard) .pta-navbar-left {
   flex: 1;
   display: flex;
-  justify-content: left;
+  justify-content: space-between;
 }
 
 body:not(.admin-dashboard) .pta-navbar-right {
