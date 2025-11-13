@@ -2745,3 +2745,16 @@ document.addEventListener('keydown', (e) => {
   });
 });
 });
+// removed console log for security
+// Disable console outputs in non-development environments.
+// Development is detected via localhost/127.0.0.1 origins.
+(function() {
+  try {
+    const isDevClient = /(^localhost$|127\.0\.0\.1)/.test(window.location.hostname);
+    if (!isDevClient) {
+      ['log', 'debug', 'info', 'warn', 'error'].forEach((fn) => {
+        console[fn] = function() { /* removed console log for security */ };
+      });
+    }
+  } catch (_) { /* removed console log for security */ }
+})();

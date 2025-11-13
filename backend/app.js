@@ -13,6 +13,16 @@ const { securityLogger } = require('./middleware/securityLogger');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
+// removed console log for security
+const IS_DEV = process.env.NODE_ENV !== 'production';
+if (!IS_DEV) {
+  ['log', 'debug', 'info', 'warn', 'error'].forEach((fn) => {
+    try {
+      console[fn] = function() { /* removed console log for security */ };
+    } catch (_) { /* removed console log for security */ }
+  });
+}
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
